@@ -1,0 +1,5 @@
+#ignore files
+fptr10/
+*.dll
+*.exe
+*.zip
