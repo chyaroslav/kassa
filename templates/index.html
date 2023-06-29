@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Кассовое место</title>
+        <!-- <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous"> -->
+        <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    </head>
+
+    <body>
+      <div class="row">
+        <div class="col">
+          <div class="row justify-content-md-center">
+            <h2>Кассовое место, организация:{{.OrgName}}</h2>
+          </div>
+<div class="row">
+  
+  <div class="col-md-auto">
+  <button class="btn btn-sm btn-primary" onclick="dbLogout();">Выйти</button>
+</div>
+  <div id="dbStatus" class="col-md-auto"> Соединен пользователь: {{.User}}, Оператор: {{.OperName}}</div>
+</div>
+<hr>
+<div class="row">
+  <div class="col-md-auto">
+  <button class="btn btn-sm btn-primary" id="ChangeKKMStatus" onclick="checkKkm();">Подключить ККМ</button>
+</div>
+   <div class="col-md-auto" id="kkmStatus"> 
+    </div>
+</div>
+<hr>
+<div class="row">
+  <div class="col-md-auto">
+  <button class="btn btn-sm btn-primary" id="ChangeShiftStatus" onclick="setShift();" 
+  {{if .IsKKMOpened}} disabled="false" {{else}} disabled="true"{{end}}>
+    Открыть смену</button>
+</div>
+  
+  <div id="shiftStatus" class="col-md-auto"> </div>
+</div>
+<hr>
+<div class="row">
+  <div class="col-md-auto">
+  <button class="btn btn-sm btn-primary" id="CancelReciept" onclick="cancelReciept();" disabled="true">Отменить текущий чек</button>
+</div>
+  
+  <div id="cancelRecieptStatus" class="col-md-auto"> </div>
+</div>
+</div>
+{{if .AutoPrint}}
+<div class="col">
+   <div class="row justify-content-md-center">
+    <h2>Автоматическая печать (период: {{.APtime}} минут)</h2>
+    </div>
+    <div class="row"> 
+      <div class="col-md-auto">
+        <button class="btn btn-sm btn-primary" id="AutoPrint" onclick="autoPrint();" value="0" disabled="true">Запустить авто-печать</button>
+      </div>
+        
+        <div id="apStatus" class="col-md-auto">  {{if .IsAPStarted}} Запущено. {{else}} Остановлено.{{end}}</div>
+      </div>  
+  </div> {{end}}
+</div>
+
+
+<hr>
+<div>
+<div>Статус:</div> <div  id="status"></div>
+</div>
+    
+        
+        
+          <div class="d-flex flex-row justify-content-center">
+            
+          <label for="inputDate" class="p-2">Введите дату:</label> 
+            
+            <div class="p-2"><input type="date" id="inputDate" 
+              onchange="listOrders(this.value);"> 
+            </div>
+      
+           
+            <div class="p-2">
+            <input list="orders" name="orderList" id="order" placeholder="Выберите накладную.." autocomplete="off">
+          </div>
+          <!-- <style>
+          datalist option {
+            font-size: 0.8em;
+            padding: 0.3em 1em;
+            background-color: #ccc;
+            cursor: pointer;
+          }
+        </style> -->
+            <datalist id="orders" >
+              
+              
+            </datalist>
+          
+         
+       
+            <!-- <div class="p-2">
+            <select 
+            style="max-width: 140px; margin-right:-17px;" 
+            class="form-select form-select-lg"
+            id="orderSelect" placeholder="Накладная">
+              <option selected>Выберите накладную...</option>
+            </select>
+            </div> -->
+            <div class="p-2">
+             <button class="btn btn-sm btn-primary" onclick="listPositions(order.value);">Вывести</button>
+            </div>  
+            <div class="p-2">
+              <select id="nCache">
+                <option value="1">Безналичный</option>
+                <option value="0">Наличный</option>
+              </select>
+             </div>  
+            <div class="p-2">
+              <button class="btn btn-sm btn-primary"  id="printOrd" onclick="printOrder();" disabled="true">Печать</button>
+             </div>
+            </div>
+          
+          
+    
+        <div class="d-flex gap-5 justify-content-center table-responsive text-nowrap">
+        <table class="table table-success table-sm table-striped table-bordered .w-auto"
+        style="width:50%;margin-left:auto;margin-right:auto;">
+            <thead>
+                <tr class="text-center">
+                  <th scope="col">Штрих код</th>
+                  <th scope="col">Группа ТМЦ</th>
+                  <th scope="col">Товар</th>
+                  <th scope="col">Цена</th>
+                  <th scope="col">Кол-во</th>
+                  <th scope="col">Сумма</th>
+                  <th scope="col">Цена без скидки</th>
+                  <th scope="col">Ставка налога</th>
+                </tr>
+              </thead>
+              <tbody id="positions">
+                
+              </tbody>
+            
+          </table>
+        </div>
+        
+        
+        <script src="/static/scripts.js?version=1"></script>  
+    </body>
+</html>
