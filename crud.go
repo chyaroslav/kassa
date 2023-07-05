@@ -88,12 +88,12 @@ func (k *K) getOrders(date string) ([]*O, error) {
 
 // Выдаем список накладных для авто-печати
 func (k *K) getAPOrders() ([]*apOrder, error) {
-	/* qSel := `select t2.УИД orderid
-	from накладные_ккм t2 where
-	н.уид in (select п.накл_уид from позиции_характеристик_накл п where п.хар_накл_уид=60 and п.значение='1')` */
-	// запрос для теста.
 	qSel := `select t2.УИД orderid, decode(t2.ТИП_ОПЛАТЫ,'Н',0,'Б',1) pType
-	from накладные_ккм t2 where t2.ОРГ_УИД_ЮРЛИЦО=203452 and t2.ДАТА=to_date('2023-06-21','YYYY-MM-DD')`
+	from накладные_ккм t2 where
+	t2.уид in (select п.накл_уид from позиции_характеристик_накл п where п.хар_накл_уид=60 and п.значение='1')`
+	// запрос для теста.
+	/* qSel := `select t2.УИД orderid, decode(t2.ТИП_ОПЛАТЫ,'Н',0,'Б',1) pType
+	from накладные_ккм t2 where t2.ОРГ_УИД_ЮРЛИЦО=203452 and t2.ДАТА=to_date('2023-06-21','YYYY-MM-DD')` */
 	orders := []*apOrder{}
 	err := k.db.Select(&orders, qSel)
 	if err != nil {

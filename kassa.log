@@ -1,1 +1,60 @@
-�⪠���� � ����㯥.
+2023/07/03 08:25:57 Параметры ККМ: {188.234.244.84 1521 db11 203452 COM4 192.168.68.106 COM2 false 1}
+2023/07/03 08:25:57 IP ККМ: 192.168.68.106
+
+   ____    __
+  / __/___/ /  ___
+ / _// __/ _ \/ _ \
+/___/\__/_//_/\___/ v3.3.10-dev
+High performance, minimalist Go web framework
+https://echo.labstack.com
+____________________________________O/_______
+                                    O\
+⇨ http server started on [::]:8080
+2023/07/03 08:26:06 User: r , OrgName: Администратор  successfully logged
+{"time":"2023-07-03T08:26:06.531820891+05:00","level":"WARN","prefix":"[email=chyaroslav@inbox.ru reqid=5ipkxQfGlTNG8iDcpnYq2EhOf5YqsqOU]","file":"response.go","line":"56","message":"response already committed"}
+2023/07/03 08:26:06 ShowPage executed....
+2023/07/03 08:26:06 ShowPage params: {r Администратор Отгрузка со склада false false false 0 false}
+0xc0000db7b0
+2023/07/03 08:26:06 Client connected..
+2023/07/03 08:26:06 ApiCheckKKM...
+2023/07/03 08:26:06 CheckKKM...
+2023/07/03 08:26:06 --KKM is not initiated.
+2023/07/03 08:26:06 --Initiating KKM...
+2023/07/03 08:26:06 apigetorders date:  2023-07-03
+2023/07/03 08:26:06 --KKM driver version is: 10.9.4.5
+2023/07/03 08:26:06 Устанавливаем соединение через IP: 192.168.68.106
+2023/07/03 08:26:06 --KKM initiated successfully
+2023/07/03 08:26:06 --Query KKM serial number...
+2023/07/03 08:26:06 --KKM serial number is: 00106220251422
+2023/07/03 08:26:06 CheckKKM finished successfully!
+2023/07/03 08:48:18 ShowPage executed....
+2023/07/03 08:48:18 ShowPage params: {r Администратор Отгрузка со склада true false false 0 false}
+0xc0002b57b0
+2023/07/03 08:48:18 ApiCheckKKM...
+2023/07/03 08:48:18 CheckKKM...
+2023/07/03 08:48:18 --Query KKM serial number...
+2023/07/03 08:48:18 apigetorders date:  2023-07-03
+2023/07/03 08:48:18 Client connected..
+2023/07/03 08:48:18 --KKM serial number is: 00106220251422
+2023/07/03 08:48:18 CheckKKM finished successfully!
+2023/07/03 08:49:36 ShowPage executed....
+2023/07/03 08:49:36 ShowPage params: {r Администратор Отгрузка со склада true false false 0 false}
+0xc00030d7b0
+2023/07/03 08:49:37 Client connected..
+2023/07/03 08:49:37 ApiCheckKKM...
+2023/07/03 08:49:37 CheckKKM...
+2023/07/03 08:49:37 --Query KKM serial number...
+2023/07/03 08:49:37 apigetorders date:  2023-07-03
+2023/07/03 08:49:37 --KKM serial number is: 00106220251422
+2023/07/03 08:49:37 CheckKKM finished successfully!
+2023/07/03 08:49:56 ShowPage executed....
+2023/07/03 08:49:56 ShowPage params: {r Администратор Отгрузка со склада true false false 0 false}
+0xc00030f7b0
+2023/07/03 08:49:56 Client connected..
+2023/07/03 08:49:56 ApiCheckKKM...
+2023/07/03 08:49:56 CheckKKM...
+2023/07/03 08:49:56 --Query KKM serial number...
+2023/07/03 08:49:56 apigetorders date:  2023-07-03
+2023/07/03 08:49:56 --KKM serial number is: 00106220251422
+2023/07/03 08:49:56 CheckKKM finished successfully!
+2023/07/03 08:49:56 write tcp [::1]:8080->[::1]:58460: write: broken pipe

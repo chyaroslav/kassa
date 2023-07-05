@@ -217,22 +217,26 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		log.Println("--ошибка получения накладной:", ordId, " -", err)
 		return err
 	}
+
+	//Прописываем в чек эл.почту если она заполнена
+	if o.Email != "" {
+		k.fptr.SetParam(1008, o.Email)
+		//k.fptr.UtilFormTlv()
+		//clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
+		//k.fptr.SetParam(1256, clientInfo)
+	}
+	//Устанавливаем электронный чек (без печати) если задано
+	if pEl {
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
+		log.Println("Печатаем без бумаги..")
+	}
+	log.Println("sum:", o.OrderSum)
 	if o.OrderSum < 0 {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL_RETURN)
 		o.OrderSum = o.OrderSum * (-1)
 	} else {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL)
-	}
-	//Устанавливаем электронный чек (без печати) если задано
-	if pEl {
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
-	}
-	//Прописываем в чек эл.почту если она заполнена
-	if o.Email != "" {
-		k.fptr.SetParam(1117, o.Email)
-		k.fptr.UtilFormTlv()
-		clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
-		k.fptr.SetParam(1256, clientInfo)
+		log.Println("install receipt_type")
 	}
 	err = k.fptr.OpenReceipt()
 	if err != nil {

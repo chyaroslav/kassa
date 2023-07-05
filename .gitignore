@@ -1,6 +1,11 @@
 #ignore files
 fptr10/
+lib/
+old/
 *.dll
 *.exe
 *.zip
+*.tgz
 *.so
+*.log
+params.ini

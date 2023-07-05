@@ -387,8 +387,8 @@ func (k *K) AutoPrint() error {
 	apErr := 0
 	//Передаем накладные на печать
 	for _, ord := range ords {
-		//err = k.printOrderPos(ord.OrderId, ord.Ptype, false)
-		log.Println("--работает пустышка для накладной:", ord.OrderId)
+		err = k.printOrderPos(ord.OrderId, ord.Ptype, false)
+		//log.Println("--работает пустышка для накладной:", ord.OrderId)
 		if err != nil {
 			log.Println("--Ошибка печати накладной:", ord.OrderId, " -", err.Error())
 			//m := msg{Class: "danger", Text: "Ошибка печати накладной:" + err.Error()}
@@ -397,7 +397,7 @@ func (k *K) AutoPrint() error {
 			continue
 		}
 		//Если накладная успешно напечатана, меняем у нее признак(удалится из кэша)
-		//err = k.markOrder(ord.OrderId)
+		err = k.markOrder(ord.OrderId)
 		if err != nil {
 			log.Println("Ошибка маркировки накладной ", ord.OrderId, " :", err.Error())
 			k.writeMsg(msgDanger, "Ошибка маркировки накладной "+ord.OrderId+":"+err.Error(), 0, 0)
@@ -406,6 +406,7 @@ func (k *K) AutoPrint() error {
 		}
 
 		k.writeMsg(msgPrimary, "Накладная "+ord.OrderId+" успешно напечатана", 0, 0)
+		log.Println("Накладная ", ord.OrderId, " успешно напечатана")
 		//return c.JSON(http.StatusOK, m)
 	}
 	if apErr > 0 {
@@ -466,6 +467,12 @@ func (k *K) writeMsg(class string, text string, evt int, evtParam int) {
 }
 func (k *K) task1() {
 	log.Println("Task 1 started..")
+	err := k.AutoPrint()
+	if err != nil {
+		log.Println("Авто печать завершилась не удачно, ошибок: ", err.Error())
+
+	}
+	log.Println("Task 1 finished..")
 }
 func (k *K) ApiChangeAP(c echo.Context) error {
 	if k.kkm.IsAPStarted {
