@@ -33,15 +33,19 @@ const (
 )
 
 type P struct {
-	DBHost     string
-	DBPort     string
-	DBName     string
-	OrgID      int
-	KMPort     string
-	KMIP       string
-	ScanerPort string
-	AutoPrint  bool
-	APtime     int
+	DBHost         string
+	DBPort         string
+	DBName         string
+	OrgID          int
+	KMPort         string
+	KMIP           string
+	ScanerPort     string
+	EReciept       bool // Не печатать чек на бумаге если true
+	AutoPrint      bool //включение автопечати. веб-хендлеры не загружаются. имя/пароль к БД должны быть заданы в параметрах
+	APtime         int  //Интервал срабатывания автопечати в минутах
+	User           string
+	Password       string
+	CloseShiftTime int //Интервал переоткрытия смены в минутах
 }
 
 /*
@@ -387,7 +391,7 @@ func (k *K) AutoPrint() error {
 	apErr := 0
 	//Передаем накладные на печать
 	for _, ord := range ords {
-		err = k.printOrderPos(ord.OrderId, ord.Ptype, false)
+		err = k.printOrderPos(ord.OrderId, ord.Ptype, k.params.EReciept)
 		//log.Println("--работает пустышка для накладной:", ord.OrderId)
 		if err != nil {
 			log.Println("--Ошибка печати накладной:", ord.OrderId, " -", err.Error())
@@ -470,9 +474,31 @@ func (k *K) task1() {
 	err := k.AutoPrint()
 	if err != nil {
 		log.Println("Авто печать завершилась не удачно, ошибок: ", err.Error())
-
+		log.Println("Останавливаем планировщик..")
+		k.s.Stop()
+		return
 	}
 	log.Println("Task 1 finished..")
+}
+func (k *K) task2() {
+	log.Println("Task 2 started..")
+	log.Println("Закрываем смену..")
+	err := k.closeShift()
+	if err != nil {
+		log.Println("Авто закрытие смены завершилось не удачно: ", err.Error())
+		log.Println("Останавливаем планировщик..")
+		k.s.Stop()
+		return
+	}
+	log.Println("Открываем смену..")
+	err = k.openShift()
+	if err != nil {
+		log.Println("Авто открытие смены завершилось не удачно: ", err.Error())
+		log.Println("Останавливаем планировщик..")
+		k.s.Stop()
+		return
+	}
+	log.Println("Task 2 finished..")
 }
 func (k *K) ApiChangeAP(c echo.Context) error {
 	if k.kkm.IsAPStarted {
@@ -484,6 +510,46 @@ func (k *K) ApiChangeAP(c echo.Context) error {
 	log.Println("Starting sched..")
 	k.s.StartAsync()
 	k.kkm.IsAPStarted = true
+	return nil
+}
+func (k *K) startAP() error {
+	log.Println("Подключаемся к БД:", k.params.DBHost, "/", k.params.DBName, " под пользователем:", k.params.User)
+	err := k.setDbConnection(k.params.User, k.params.Password)
+	if err != nil {
+		log.Println("Ошибка подключения к БД:", err.Error())
+		return err
+	}
+	log.Println("Соединение успешно, пользователь:", k.params.User)
+	log.Println("Соединяемся с ККМ..")
+	sn, err := k.CheckKKM()
+
+	//sn := "test kkm" //пустышка для теста
+	if err != nil {
+		log.Println("Ошибка соединения с ККМ:", err.Error())
+		return err
+	}
+	log.Println("Успешно соединились с ККМ, серийный номер:", sn)
+	log.Println("Открываем смену..")
+	err = k.openShift()
+	if err != nil {
+		log.Println("Ошибка открытия смены:", err.Error())
+		return err
+	}
+	log.Println("Смена успешно открыта, оператор:", k.kkm.OperName)
+	log.Println("Запускаем планировщик..")
+	k.s = gocron.NewScheduler(time.UTC)
+	k.s.SetMaxConcurrentJobs(1, gocron.RescheduleMode)
+	log.Println("Задание 1: автопечать накладных, интервал(мин):", k.params.APtime)
+	_, err = k.s.Every(k.params.APtime).Minutes().SingletonMode().Do(k.task1)
+	if err != nil {
+		log.Fatal("Ошибка запуска задания 1:", err.Error())
+	}
+	log.Println("Задание 2: автоматическое переоткрытие смены, интервал(мин):", k.params.CloseShiftTime)
+	_, err = k.s.Every(k.params.CloseShiftTime).Minutes().SingletonMode().Do(k.task2)
+	if err != nil {
+		log.Fatal("Ошибка запуска задания 2:", err.Error())
+	}
+	k.s.StartBlocking()
 	return nil
 }
 func main() {
@@ -518,37 +584,37 @@ func main() {
 	defer k.fptr.Close()
 	//Запускаем шедулер
 	if k.params.AutoPrint {
-		k.s = gocron.NewScheduler(time.UTC)
-		_, err = k.s.Every(k.params.APtime).Minutes().Do(k.task1)
+		err = k.startAP()
 		if err != nil {
-			log.Fatal("error starting sched job:", err.Error())
+			log.Fatalln("Ошибка работы автоматических заданий:", err)
 		}
+	} else {
+		/* ord, err := k.getOrders("2023-03-12")
+		if err != nil {
+			log.Fatalln("select ord error: ", err)
+		}
+		log.Println(ord)
+		*/
+		/* qSel := `select наименование from материалы where уид=11218`
+		var str []string
+		err = k.db.Select(&str, qSel) */
+		/* if err != nil {
+			log.Fatalln("select error: ", err)
+		} */
+		e.Static("/static", "static")
+		e.GET("/login", k.ShowLogin)
+		e.GET("/ws", k.wsHandler)
+		e.POST("/login", k.ProcessLogin)
+		e.GET("/", k.showPage)
+		e.GET("/api/v1/orders/get/:date", k.ApiGetOrders)
+		e.GET("/api/v1/orders/get/print/:ordId/:pType", k.ApiPrintOrder)
+		e.GET("/api/v1/positions/get/:ordId", k.ApiGetPositions)
+		e.GET("/api/v1/kkm/setshift", k.ApiSetShift)
+		e.GET("/api/v1/kkm/check", k.ApiCheckKKM)
+		e.GET("/api/v1/kkm/cancelReciept", k.ApiCancelReciept)
+		e.POST("/api/v1/kkm/autoprint", k.ApiChangeAP)
+		e.Logger.Fatal(e.Start(":8080"))
 	}
-	/* ord, err := k.getOrders("2023-03-12")
-	if err != nil {
-		log.Fatalln("select ord error: ", err)
-	}
-	log.Println(ord)
-	*/
-	/* qSel := `select наименование from материалы where уид=11218`
-	var str []string
-	err = k.db.Select(&str, qSel) */
-	/* if err != nil {
-		log.Fatalln("select error: ", err)
-	} */
-	e.Static("/static", "static")
-	e.GET("/login", k.ShowLogin)
-	e.GET("/ws", k.wsHandler)
-	e.POST("/login", k.ProcessLogin)
-	e.GET("/", k.showPage)
-	e.GET("/api/v1/orders/get/:date", k.ApiGetOrders)
-	e.GET("/api/v1/orders/get/print/:ordId/:pType", k.ApiPrintOrder)
-	e.GET("/api/v1/positions/get/:ordId", k.ApiGetPositions)
-	e.GET("/api/v1/kkm/setshift", k.ApiSetShift)
-	e.GET("/api/v1/kkm/check", k.ApiCheckKKM)
-	e.GET("/api/v1/kkm/cancelReciept", k.ApiCancelReciept)
-	e.POST("/api/v1/kkm/autoprint", k.ApiChangeAP)
-	e.Logger.Fatal(e.Start(":8080"))
 	//fmt.Println(str)
 
 }
