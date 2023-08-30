@@ -7,10 +7,10 @@ import (
 )
 
 type O struct {
-	OrderId   string  `db:"ORDERID" form:"orderid" json:"orderid"`
-	OrderSum  float32 `db:"ORDERSUM" form:"ordersum" json:"ordersum"`
-	Desc      string  `db:"DESCRIPTION" form:"desc" json:"desc"`
-	Email     string  `db:"EMAIL" form:"email" json:"email"`
+	OrderId   string `db:"ORDERID" form:"orderid" json:"orderid"`
+	OrderSum  string `db:"ORDERSUM" form:"ordersum" json:"ordersum"`
+	Desc      string `db:"DESCRIPTION" form:"desc" json:"desc"`
+	Email     string `db:"EMAIL" form:"email" json:"email"`
 	Positions []*Position
 }
 type Position struct {
@@ -18,7 +18,7 @@ type Position struct {
 	Gr      string `db:"GR"`
 	Good    string `db:"GOOD"`
 	Price   string `db:"PRICE"`
-	Cnt     string `db:"CNT"`
+	Cnt     int    `db:"CNT"`
 	Sum     string `db:"SUM"`
 	Pws     string `db:"PWS"`
 	Tax     string `db:"TAX"`

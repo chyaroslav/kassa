@@ -2,13 +2,15 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"html/template"
 	"io"
 	"kassa/fptr10"
 	"log"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-co-op/gocron"
@@ -45,7 +47,8 @@ type P struct {
 	APtime         int  //Интервал срабатывания автопечати в минутах
 	User           string
 	Password       string
-	CloseShiftTime int //Интервал переоткрытия смены в минутах
+	CloseShiftTime string //Время регулярного переоткрытия смены в формате "59:23" рестарт ежедневно в 23:59
+	TGnotification bool   // Дополнительно к логу оповещать в телеграмм
 }
 
 /*
@@ -378,17 +381,18 @@ func (k *K) ApiPrintOrder(c echo.Context) error {
 	m := msg{Class: "primary", Text: "Накладная " + ordId + " успешно напечатана"}
 	return c.JSON(http.StatusOK, m)
 }
-func (k *K) AutoPrint() error {
-	log.Println("Starting ApiAutoPrintOrder...")
+func (k *K) AutoPrint() (int, int, error) {
+	log.Println("Starting AutoPrint...")
 	//получаем список накладных для авто-печати
 	ords, err := k.getAPOrders()
 	if err != nil {
 		log.Println("--Ошибка получения накладных для автопечати:", err.Error())
 		//m := msg{Class: "danger", Text: "Ошибка получения накладных для автопечати:" + err.Error()}
-		k.writeMsg(msgDanger, "Ошибка получения накладных для автопечати:"+err.Error(), 0, 0)
-		return err
+		//k.writeMsg(msgDanger, "Ошибка получения накладных для автопечати:"+err.Error(), 0, 0)
+		return 0, 0, err
 	}
 	apErr := 0
+	apSuc := 0
 	//Передаем накладные на печать
 	for _, ord := range ords {
 		err = k.printOrderPos(ord.OrderId, ord.Ptype, k.params.EReciept)
@@ -396,7 +400,8 @@ func (k *K) AutoPrint() error {
 		if err != nil {
 			log.Println("--Ошибка печати накладной:", ord.OrderId, " -", err.Error())
 			//m := msg{Class: "danger", Text: "Ошибка печати накладной:" + err.Error()}
-			k.writeMsg(msgDanger, "Ошибка авто-печати накладной "+ord.OrderId+":"+err.Error(), 0, 0)
+			k.checkDocStatus() //Отменяем чек в случае ошибки
+			//k.writeMsg(msgDanger, "Ошибка авто-печати накладной "+ord.OrderId+":"+err.Error(), 0, 0)
 			apErr++
 			continue
 		}
@@ -404,21 +409,18 @@ func (k *K) AutoPrint() error {
 		err = k.markOrder(ord.OrderId)
 		if err != nil {
 			log.Println("Ошибка маркировки накладной ", ord.OrderId, " :", err.Error())
-			k.writeMsg(msgDanger, "Ошибка маркировки накладной "+ord.OrderId+":"+err.Error(), 0, 0)
+			//k.writeMsg(msgDanger, "Ошибка маркировки накладной "+ord.OrderId+":"+err.Error(), 0, 0)
 			apErr++
 			continue
 		}
-
-		k.writeMsg(msgPrimary, "Накладная "+ord.OrderId+" успешно напечатана", 0, 0)
+		apSuc++
+		//k.writeMsg(msgPrimary, "Накладная "+ord.OrderId+" успешно напечатана", 0, 0)
 		log.Println("Накладная ", ord.OrderId, " успешно напечатана")
 		//return c.JSON(http.StatusOK, m)
 	}
-	if apErr > 0 {
-		k.writeMsg(msgDanger, "Авто-печать накладных завершилась с ошибками. Итого:"+strconv.Itoa(apErr)+" ошибок.", 0, 0)
-		return errors.New(strconv.Itoa(apErr))
-	}
-	k.writeMsg(msgPrimary, "Авто-печать накладных завершилась успешно.", 0, 0)
-	return nil
+
+	//k.writeMsg(msgPrimary, "Авто-печать накладных завершилась успешно.", 0, 0)
+	return apErr, apSuc, nil
 }
 func (k *K) wsHandler(c echo.Context) error {
 	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
@@ -470,22 +472,26 @@ func (k *K) writeMsg(class string, text string, evt int, evtParam int) {
 	}()
 }
 func (k *K) task1() {
-	log.Println("Task 1 started..")
-	err := k.AutoPrint()
+	log.Println("Запускается задание авто-печати накладных")
+	apErr, apSuc, err := k.AutoPrint()
 	if err != nil {
-		log.Println("Авто печать завершилась не удачно, ошибок: ", err.Error())
+		k.sendLogMsg("Авто печать завершилась не удачно: " + err.Error())
 		log.Println("Останавливаем планировщик..")
 		k.s.Stop()
 		return
 	}
-	log.Println("Task 1 finished..")
+	if apErr > 0 || apSuc > 0 {
+		k.sendLogMsg("Задание авто-печати завершено. Успешно напечатано:" + strconv.Itoa(apSuc) + ", c ошибками:" + strconv.Itoa(apErr))
+	}
+	log.Println("Задание авто-печати накладных завершено")
 }
 func (k *K) task2() {
-	log.Println("Task 2 started..")
+	sendTGmsg("Запускается задание переоткрытия смены")
+	//log.Println("Task 2 started..")
 	log.Println("Закрываем смену..")
 	err := k.closeShift()
 	if err != nil {
-		log.Println("Авто закрытие смены завершилось не удачно: ", err.Error())
+		k.sendLogMsg("Авто закрытие смены завершилось не удачно: " + err.Error())
 		log.Println("Останавливаем планировщик..")
 		k.s.Stop()
 		return
@@ -493,12 +499,12 @@ func (k *K) task2() {
 	log.Println("Открываем смену..")
 	err = k.openShift()
 	if err != nil {
-		log.Println("Авто открытие смены завершилось не удачно: ", err.Error())
+		k.sendLogMsg("Авто открытие смены завершилось не удачно: " + err.Error())
 		log.Println("Останавливаем планировщик..")
 		k.s.Stop()
 		return
 	}
-	log.Println("Task 2 finished..")
+	k.sendLogMsg("Задание переоткрытия смены успешно выполнено")
 }
 func (k *K) ApiChangeAP(c echo.Context) error {
 	if k.kkm.IsAPStarted {
@@ -512,7 +518,54 @@ func (k *K) ApiChangeAP(c echo.Context) error {
 	k.kkm.IsAPStarted = true
 	return nil
 }
+func sendTGmsg(a ...any) error {
+	// Generated by curl-to-Go: https://mholt.github.io/curl-to-go
+
+	// curl -s -X POST https://api.telegram.org/bot5528915104:AAHS6cQNirj3CNanl47IBRS5kr-bZvua5IY/sendMessage -d chat_id=959917912 -d text="$MSG"
+	//msg := fmt.Sprintf("%v", a)
+	var msg string
+	//msg := fmt.Sprintf("%v", a)
+	for i := 0; i < len(a); i++ {
+		msg = msg + fmt.Sprintf("%v", a[i])
+	}
+	params := url.Values{}
+	params.Add("chat_id", `-959917912`)
+	params.Add("text", msg)
+	body := strings.NewReader(params.Encode())
+
+	req, err := http.NewRequest("POST", "https://api.telegram.org/bot5528915104:AAHS6cQNirj3CNanl47IBRS5kr-bZvua5IY/sendMessage", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	return nil
+}
+func (k *K) sendLogMsg(msg ...any) {
+	log.Println(msg...)
+	if k.params.TGnotification {
+		sendTGmsg(msg...)
+	}
+}
+func (k *K) initCron() {
+	localTime, _ := time.LoadLocation("Asia/Yekaterinburg")
+	//log.Println("Запускаем планировщик..")
+	k.s = gocron.NewScheduler(localTime)
+	k.s.SetMaxConcurrentJobs(1, gocron.RescheduleMode)
+	k.s.SingletonModeAll()
+	k.s.WaitForScheduleAll()
+}
 func (k *K) startAP() error {
+	defer func() {
+		if err := recover(); err != nil {
+			k.sendLogMsg("Случилась паника:", err)
+		}
+	}()
 	log.Println("Подключаемся к БД:", k.params.DBHost, "/", k.params.DBName, " под пользователем:", k.params.User)
 	err := k.setDbConnection(k.params.User, k.params.Password)
 	if err != nil {
@@ -525,7 +578,8 @@ func (k *K) startAP() error {
 
 	//sn := "test kkm" //пустышка для теста
 	if err != nil {
-		log.Println("Ошибка соединения с ККМ:", err.Error())
+
+		k.sendLogMsg("Ошибка соединения с ККМ:" + err.Error())
 		return err
 	}
 	log.Println("Успешно соединились с ККМ, серийный номер:", sn)
@@ -536,18 +590,18 @@ func (k *K) startAP() error {
 		return err
 	}
 	log.Println("Смена успешно открыта, оператор:", k.kkm.OperName)
-	log.Println("Запускаем планировщик..")
-	k.s = gocron.NewScheduler(time.UTC)
-	k.s.SetMaxConcurrentJobs(1, gocron.RescheduleMode)
-	log.Println("Задание 1: автопечать накладных, интервал(мин):", k.params.APtime)
+	k.initCron()
+	k.sendLogMsg("Задание 1: автопечать накладных, интервал(мин):" + strconv.Itoa(k.params.APtime))
 	_, err = k.s.Every(k.params.APtime).Minutes().SingletonMode().Do(k.task1)
 	if err != nil {
-		log.Fatal("Ошибка запуска задания 1:", err.Error())
+		log.Println("Ошибка запуска задания 1:", err.Error())
+		return err
 	}
-	log.Println("Задание 2: автоматическое переоткрытие смены, интервал(мин):", k.params.CloseShiftTime)
-	_, err = k.s.Every(k.params.CloseShiftTime).Minutes().SingletonMode().Do(k.task2)
+	k.sendLogMsg("Задание 2: автоматическое переоткрытие смены:" + k.params.CloseShiftTime)
+	_, err = k.s.Every(1).Day().At(k.params.CloseShiftTime).Do(k.task2)
 	if err != nil {
-		log.Fatal("Ошибка запуска задания 2:", err.Error())
+		log.Println("Ошибка запуска задания 2:", err.Error())
+		return err
 	}
 	k.s.StartBlocking()
 	return nil
@@ -586,8 +640,12 @@ func main() {
 	if k.params.AutoPrint {
 		err = k.startAP()
 		if err != nil {
-			log.Fatalln("Ошибка работы автоматических заданий:", err)
+			k.sendLogMsg("Ошибка старта программы авто-печати:" + err.Error())
+			return
+			//log.Fatalln("Ошибка работы автоматических заданий:", err)
 		}
+		k.sendLogMsg("Программа авто-печати успешно стартована")
+
 	} else {
 		/* ord, err := k.getOrders("2023-03-12")
 		if err != nil {

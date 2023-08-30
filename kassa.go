@@ -119,6 +119,12 @@ func (k *K) cancelReceipt() error {
 	}
 	return nil
 }
+func (k *K) checkPaper() bool {
+	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_DATA_TYPE, fptr10.LIBFPTR_DT_STATUS)
+	k.fptr.QueryData()
+	isPaperNearEnd := k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_PAPER_NEAR_END)
+	return isPaperNearEnd
+}
 
 // Открытие смены
 func (k *K) openShift() error {
@@ -154,7 +160,7 @@ func (k *K) openShift() error {
 			return err
 		}
 	} */
-	//k.checkDocStatus()
+	k.checkDocStatus()
 	/* err = k.fptr.CheckDocumentClosed()
 	if err != nil {
 		log.Println("--Error when check unclosed dockuments: ", err)
@@ -166,7 +172,7 @@ func (k *K) openShift() error {
 		}
 	} */
 	//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_REPORT_TYPE, fptr10.LIBFPTR_RT_CLOSE_SHIFT)
-	k.fptr.Report()
+	//k.fptr.Report()
 	log.Println("--Opening shift finished")
 	k.kkm.IsShiftOpened = true
 	return nil
@@ -188,6 +194,7 @@ func (k *K) closeShift() error {
 		return err
 	}
 	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_REPORT_TYPE, fptr10.LIBFPTR_RT_CLOSE_SHIFT)
+	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
 	err = k.fptr.Report()
 	if err != nil {
 		log.Println("Error while print closing report: ", err)
@@ -209,6 +216,19 @@ func (k *K) setTax(tax string) {
 	}
 }
 
+func strToFloat(s string) (float64, error) {
+	//Удаляем пробелы
+	s1 := strings.ReplaceAll(s, " ", "")
+	//Заменяем зпт на точку
+	s1 = strings.Replace(s1, ",", ".", 1)
+	f, err := strconv.ParseFloat(s1, 32)
+	if err != nil {
+		//log.Println(err.Error())
+		return 0, err
+	}
+	return f, nil
+}
+
 // Печать позиций накладной на ККМ, параметры: накл_уид; тип оплаты 0-нал, 1-безнал; электронный чек true\false
 func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 	log.Println("--Starting print order")
@@ -225,18 +245,23 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
 		//k.fptr.SetParam(1256, clientInfo)
 	}
+	log.Println("sum:", o.OrderSum)
+	ordSum, err := strToFloat(o.OrderSum)
+	if err != nil {
+		log.Println("Ошибка конвертации суммы", err.Error())
+		return err
+	}
+	if ordSum < 0 {
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL_RETURN)
+		ordSum = ordSum * (-1)
+	} else {
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL)
+		//log.Println("install receipt_type")
+	}
 	//Устанавливаем электронный чек (без печати) если задано
 	if pEl {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
 		log.Println("Печатаем без бумаги..")
-	}
-	log.Println("sum:", o.OrderSum)
-	if o.OrderSum < 0 {
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL_RETURN)
-		o.OrderSum = o.OrderSum * (-1)
-	} else {
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL)
-		log.Println("install receipt_type")
 	}
 	err = k.fptr.OpenReceipt()
 	if err != nil {
@@ -244,19 +269,19 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		return err
 	}
 	for _, pos := range o.Positions {
-		price, err := strconv.ParseFloat(strings.Replace(pos.Price, `,`, `.`, 1), 32)
+		price, err := strToFloat(pos.Price)
 		if err != nil {
 			log.Println("--ошибка конвертации цены в float: ", err)
 			return err
 		}
-		cnt, err := strconv.Atoi(pos.Cnt)
+		/* cnt, err := strconv.Atoi(pos.Cnt)
 		if err != nil {
 			log.Println("--ошибка конвертации количество в int: ", err)
 			return err
-		}
+		} */
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_COMMODITY_NAME, pos.Good)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRICE, price)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, pos.Cnt)
 		k.setTax(pos.Tax)
 		err = k.fptr.Registration()
 		if err != nil {
@@ -266,7 +291,7 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 	}
 	//pType = 0 = fptr10.LIBFPTR_PT_cache - наличные, pType = 1 = fptr10.LIBFPTR_PT_ELECTRONICALLY - безнал
 	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PAYMENT_TYPE, pType)
-	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PAYMENT_SUM, o.OrderSum)
+	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PAYMENT_SUM, ordSum)
 
 	err = k.fptr.Payment()
 	if err != nil {
@@ -278,6 +303,8 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		log.Println("--ошибка закрытия чека: ", err)
 		return err
 	}
-
+	if k.checkPaper() {
+		k.sendLogMsg("ВНИМАНИЕ! Заканчивается чековая лента")
+	}
 	return nil
 }
