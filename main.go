@@ -94,6 +94,7 @@ type kkmParams struct {
 	AutoPrint     bool
 	APtime        int
 	IsAPStarted   bool
+	IsKKMBusy     bool
 }
 
 func getParams(f string) (*P, error) {
@@ -263,6 +264,55 @@ func (k *K) ProcessLogin(c echo.Context) error {
 	// })
 
 }
+func (k *K) wsHandler(c echo.Context) error {
+	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		c.Logger().Error(err)
+		return err
+	}
+	defer ws.Close()
+	log.Println("Client connected..")
+	k.writeMessages(ws)
+	/* for {
+		// Write
+		err := ws.WriteMessage(websocket.TextMessage, []byte("Hello, Client!"))
+		if err != nil {
+			c.Logger().Error(err)
+		}
+
+
+	} */
+	return nil
+}
+
+// Принимаем сообщения из очереди и посылаем клиенту по вебсокету
+func (k *K) writeMessages(w *websocket.Conn) {
+
+	for {
+		//log.Println("Before chan..")
+		message := <-k.msgChan
+
+		b, err := json.Marshal(message)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		//log.Println("Writing to WS..")
+		if err := w.WriteMessage(websocket.TextMessage, b); err != nil {
+			log.Println(err)
+		}
+	}
+
+}
+
+// Асинхронно записываем сообщение в очередь для посылки клиенту
+func (k *K) writeMsg(class string, text string, evt int, evtParam int) {
+	m := msg{Class: class, Text: text, EventId: 0}
+	go func() {
+		//log.Println("writing to chan..")
+		k.msgChan <- m
+	}()
+}
 
 // Выдает список накладных за дату
 func (k *K) ApiGetOrders(c echo.Context) error {
@@ -382,7 +432,13 @@ func (k *K) ApiPrintOrder(c echo.Context) error {
 	return c.JSON(http.StatusOK, m)
 }
 func (k *K) AutoPrint() (int, int, error) {
-	log.Println("Starting AutoPrint...")
+	//log.Println("Запускаем автопечать...")
+
+	defer func() {
+		if err := recover(); err != nil {
+			k.sendLogMsg("Случилась паника:", err)
+		}
+	}()
 	//получаем список накладных для авто-печати
 	ords, err := k.getAPOrders()
 	if err != nil {
@@ -422,57 +478,15 @@ func (k *K) AutoPrint() (int, int, error) {
 	//k.writeMsg(msgPrimary, "Авто-печать накладных завершилась успешно.", 0, 0)
 	return apErr, apSuc, nil
 }
-func (k *K) wsHandler(c echo.Context) error {
-	ws, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		c.Logger().Error(err)
-		return err
-	}
-	defer ws.Close()
-	log.Println("Client connected..")
-	k.writeMessages(ws)
-	/* for {
-		// Write
-		err := ws.WriteMessage(websocket.TextMessage, []byte("Hello, Client!"))
-		if err != nil {
-			c.Logger().Error(err)
-		}
 
-
-	} */
-	return nil
-}
-
-// Принимаем сообщения из очереди и посылаем клиенту по вебсокету
-func (k *K) writeMessages(w *websocket.Conn) {
-
-	for {
-		//log.Println("Before chan..")
-		message := <-k.msgChan
-
-		b, err := json.Marshal(message)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		//log.Println("Writing to WS..")
-		if err := w.WriteMessage(websocket.TextMessage, b); err != nil {
-			log.Println(err)
-		}
-	}
-
-}
-
-// Асинхронно записываем сообщение в очередь для посылки клиенту
-func (k *K) writeMsg(class string, text string, evt int, evtParam int) {
-	m := msg{Class: class, Text: text, EventId: 0}
-	go func() {
-		//log.Println("writing to chan..")
-		k.msgChan <- m
-	}()
-}
 func (k *K) task1() {
 	log.Println("Запускается задание авто-печати накладных")
+	if k.kkm.IsKKMBusy {
+		k.sendLogMsg("ККМ занят, выходим.")
+		return
+	}
+	//блокируем ККМ
+	k.kkm.IsKKMBusy = true
 	apErr, apSuc, err := k.AutoPrint()
 	if err != nil {
 		k.sendLogMsg("Авто печать завершилась не удачно: " + err.Error())
@@ -484,9 +498,17 @@ func (k *K) task1() {
 		k.sendLogMsg("Задание авто-печати завершено. Успешно напечатано:" + strconv.Itoa(apSuc) + ", c ошибками:" + strconv.Itoa(apErr))
 	}
 	log.Println("Задание авто-печати накладных завершено")
+	//отпускаем ККМ
+	k.kkm.IsKKMBusy = false
 }
 func (k *K) task2() {
-	sendTGmsg("Запускается задание переоткрытия смены")
+	k.sendLogMsg("Запускается задание переоткрытия смены")
+	if k.kkm.IsKKMBusy {
+		k.sendLogMsg("ККМ занят, выходим.")
+		return
+	}
+	//блокируем ККМ
+	k.kkm.IsKKMBusy = true
 	//log.Println("Task 2 started..")
 	log.Println("Закрываем смену..")
 	err := k.closeShift()
@@ -505,6 +527,8 @@ func (k *K) task2() {
 		return
 	}
 	k.sendLogMsg("Задание переоткрытия смены успешно выполнено")
+	//отпускаем ККМ
+	k.kkm.IsKKMBusy = false
 }
 func (k *K) ApiChangeAP(c echo.Context) error {
 	if k.kkm.IsAPStarted {
@@ -561,11 +585,7 @@ func (k *K) initCron() {
 	k.s.WaitForScheduleAll()
 }
 func (k *K) startAP() error {
-	defer func() {
-		if err := recover(); err != nil {
-			k.sendLogMsg("Случилась паника:", err)
-		}
-	}()
+
 	log.Println("Подключаемся к БД:", k.params.DBHost, "/", k.params.DBName, " под пользователем:", k.params.User)
 	err := k.setDbConnection(k.params.User, k.params.Password)
 	if err != nil {
