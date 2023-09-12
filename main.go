@@ -510,18 +510,10 @@ func (k *K) task2() {
 	//блокируем ККМ
 	k.kkm.IsKKMBusy = true
 	//log.Println("Task 2 started..")
-	log.Println("Закрываем смену..")
-	err := k.closeShift()
+	//log.Println("Закрываем смену..")
+	err := k.reopenShift()
 	if err != nil {
-		k.sendLogMsg("Авто закрытие смены завершилось не удачно: " + err.Error())
-		log.Println("Останавливаем планировщик..")
-		k.s.Stop()
-		return
-	}
-	log.Println("Открываем смену..")
-	err = k.openShift()
-	if err != nil {
-		k.sendLogMsg("Авто открытие смены завершилось не удачно: " + err.Error())
+		k.sendLogMsg("Переоткрытие смены завершилось не удачно: ", err.Error())
 		log.Println("Останавливаем планировщик..")
 		k.s.Stop()
 		return

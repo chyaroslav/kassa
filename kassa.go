@@ -205,6 +205,23 @@ func (k *K) closeShift() error {
 	log.Println("Смена закрыта успешно")
 	return nil
 }
+
+//переоткрытие смены
+func (k *K) reopenShift() error {
+	log.Println("Закрываем смену..")
+	err := k.closeShift()
+	if err != nil {
+		log.Println("Закрытие смены завершилось с ошибкой..")
+		return err
+	}
+	log.Println("Открываем смену..")
+	err = k.openShift()
+	if err != nil {
+		log.Println("Открытие смены завершилось ошибкой..")
+		return err
+	}
+	return nil
+}
 func (k *K) setTax(tax string) {
 	switch tax {
 	case "3":
@@ -266,7 +283,18 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 	err = k.fptr.OpenReceipt()
 	if err != nil {
 		log.Println("--ошибка открытия чека: ", err)
-		return err
+		//Если ошибка в превышении смены в 24 часа, пытаемся переоткрыть смену.
+		if k.fptr.ErrorCode() == 68 {
+			log.Println("Смена превысила 24 часа, пытаемся переоткрыть..")
+			err = k.reopenShift()
+			if err != nil {
+				log.Println("Переоткрытие смены завершилось не удачно..")
+				return err
+			}
+		} else {
+			return err
+		}
+
 	}
 	for _, pos := range o.Positions {
 		price, err := strToFloat(pos.Price)
