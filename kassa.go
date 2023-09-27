@@ -291,6 +291,11 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 				log.Println("Переоткрытие смены завершилось не удачно..")
 				return err
 			}
+			err = k.fptr.OpenReceipt()
+			if err != nil {
+				log.Println("--ошибка открытия чека: ", err)
+				return err
+			}
 		} else {
 			return err
 		}
