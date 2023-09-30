@@ -68,7 +68,11 @@ function listOrders(ordDate){
         //newNode = `<option id=${item.orderid} > ${item.desc}</option>`;
         var node = document.createElement("option");
         node.value = item.orderid;
-        node.innerText = item.desc;
+        node.id = item.orderid;
+        dt = new Date(ordDate)
+        var dateString = dt.getDate()+"."+dt.getMonth()+"."+dt.getFullYear();
+        //dateString="dsd"
+        node.innerText = item.ordernum+" от "+dateString+" "+item.ordersum+"руб. "+item.client;
         itemsContainer.appendChild(node);
     }
     };
@@ -109,6 +113,8 @@ function listPositions(ordId){
         };
         request.onerror = function() {alert("error!")};
         request.send();
+        selected = document.getElementById(ordId);
+        st.innerText="Выбрана накладная: "+selected.innerText;
         };
 function checkKkm() {
     var request = new XMLHttpRequest();

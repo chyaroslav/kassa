@@ -8,6 +8,8 @@ import (
 
 type O struct {
 	OrderId   string `db:"ORDERID" form:"orderid" json:"orderid"`
+	OrderNum  string `db:"ORDERNUM" form:"ordernum" json:"ordernum"`
+	Client    string `db:"CLIENT" form:"client" json:"client"`
 	OrderSum  string `db:"ORDERSUM" form:"ordersum" json:"ordersum"`
 	Desc      string `db:"DESCRIPTION" form:"desc" json:"desc"`
 	Email     string `db:"EMAIL" form:"email" json:"email"`
@@ -73,7 +75,7 @@ from позиции_тмц_ккм t where t.НАКЛ_УИД=:1`
 }
 
 func (k *K) getOrders(date string) ([]*O, error) {
-	qSel := `select t2.УИД orderid, t2.СУММА ordersum,
+	qSel := `select t2.УИД orderid, t2.НОМЕР ordernum, t2.КЛ_НАИМЕНОВАНИЕ client, t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
 	t2.email Email 
 	from накладные_ккм t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
