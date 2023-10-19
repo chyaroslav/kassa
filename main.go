@@ -450,6 +450,7 @@ func (k *K) AutoPrint() (int, int, error) {
 		//k.writeMsg(msgDanger, "Ошибка получения накладных для автопечати:"+err.Error(), 0, 0)
 		return 0, 0, err
 	}
+	log.Println("Выбрано накладных для авто-печати:", len(ords))
 	apErr := 0
 	apSuc := 0
 	//Передаем накладные на печать
@@ -459,7 +460,11 @@ func (k *K) AutoPrint() (int, int, error) {
 		if err != nil {
 			log.Println("--Ошибка печати накладной:", ord.OrderId, " -", err.Error())
 			//m := msg{Class: "danger", Text: "Ошибка печати накладной:" + err.Error()}
-			k.checkDocStatus() //Отменяем чек в случае ошибки
+			//Проверяем ошибку, пытаемся отменить чек если он открыт или допечатать
+			if err = k.checkDocStatus(); err != nil {
+				log.Println("Ошибка на ККМ(выходим из авто-печати): ", err)
+				return apErr, apSuc, err
+			}
 			//k.writeMsg(msgDanger, "Ошибка авто-печати накладной "+ord.OrderId+":"+err.Error(), 0, 0)
 			apErr++
 			continue
@@ -485,7 +490,7 @@ func (k *K) AutoPrint() (int, int, error) {
 func (k *K) task1() {
 	log.Println("Запускается задание авто-печати накладных")
 	if k.kkm.IsKKMBusy {
-		k.sendLogMsg("ККМ занят, выходим.")
+		log.Println("ККМ занят, выходим.")
 		return
 	}
 	//блокируем ККМ
@@ -493,8 +498,8 @@ func (k *K) task1() {
 	apErr, apSuc, err := k.AutoPrint()
 	if err != nil {
 		k.sendLogMsg("Авто печать завершилась не удачно: " + err.Error())
-		log.Println("Останавливаем планировщик..")
-		k.s.Stop()
+		//log.Println("Останавливаем планировщик..")
+		//k.s.Stop()
 		return
 	}
 	if apErr > 0 || apSuc > 0 {
@@ -517,8 +522,8 @@ func (k *K) task2() {
 	err := k.reopenShift()
 	if err != nil {
 		k.sendLogMsg("Переоткрытие смены завершилось не удачно: ", err.Error())
-		log.Println("Останавливаем планировщик..")
-		k.s.Stop()
+		//log.Println("Останавливаем планировщик..")
+		//k.s.Stop()
 		return
 	}
 	k.sendLogMsg("Задание переоткрытия смены успешно выполнено")

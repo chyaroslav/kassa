@@ -5,6 +5,7 @@ import (
 	"log"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Инициализация и открытие ККМ
@@ -72,7 +73,7 @@ func (k *K) CheckKKM() (string, error) {
 }
 
 // Проверка закрыты ли документы в ККТ
-func (k *K) checkDocStatus() {
+func (k *K) checkDocStatus() error {
 	log.Println("Запускаем проверку не закрытых документов")
 	for {
 		if k.fptr.CheckDocumentClosed() == nil {
@@ -90,7 +91,7 @@ func (k *K) checkDocStatus() {
 		err := k.fptr.CancelReceipt()
 		if err != nil {
 			log.Println("--ошибка отмены чека:", err.Error())
-
+			return err
 		}
 
 	}
@@ -99,15 +100,20 @@ func (k *K) checkDocStatus() {
 		// Можно сразу вызвать метод допечатывания документа, он завершится с ошибкой, если это невозможно
 		log.Println("--Имеется не напечатанный документ. Пытаемся допечатать..")
 		for {
-			if k.fptr.ContinuePrint() == nil {
+			err := k.fptr.ContinuePrint()
+			if err == nil {
 				log.Println("Допечатано успешно")
-				break
+				return nil
 			}
-			// Если не удалось допечатать документ - показать пользователю ошибку и попробовать еще раз.
-			log.Println("Не удалось напечатать документ. Устраните неполадку и повторите.", k.fptr.ErrorDescription())
+			// Если не удалось допечатать документ - показать пользователю ошибку.
+			log.Println("Не удалось напечатать документ. Устраните неполадку и повторите(ожидание 5 мин).", k.fptr.ErrorDescription())
+			time.Sleep(5 * time.Minute)
+			//return err
+
 			continue
 		}
 	}
+	return nil
 }
 func (k *K) cancelReceipt() error {
 	log.Println("Пытаемся отменить текущий чек")
@@ -206,7 +212,7 @@ func (k *K) closeShift() error {
 	return nil
 }
 
-//переоткрытие смены
+// переоткрытие смены
 func (k *K) reopenShift() error {
 	log.Println("Закрываем смену..")
 	err := k.closeShift()
@@ -248,6 +254,7 @@ func strToFloat(s string) (float64, error) {
 
 // Печать позиций накладной на ККМ, параметры: накл_уид; тип оплаты 0-нал, 1-безнал; электронный чек true\false
 func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
+	var ordSum float64
 	log.Println("--Starting print order")
 	o, err := k.getOrder(ordId)
 	if err != nil {
@@ -263,18 +270,19 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//k.fptr.SetParam(1256, clientInfo)
 	}
 	log.Println("sum:", o.OrderSum)
-	ordSum, err := strToFloat(o.OrderSum)
+	ordSum, err = strToFloat(o.OrderSum)
 	if err != nil {
-		log.Println("Ошибка конвертации суммы", err.Error())
+		log.Println("Ошибка конвертации суммы накладной", err.Error())
 		return err
 	}
 	if ordSum < 0 {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL_RETURN)
-		ordSum = ordSum * (-1)
+		//ordSum = ordSum * (-1)
 	} else {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL)
 		//log.Println("install receipt_type")
 	}
+
 	//Устанавливаем электронный чек (без печати) если задано
 	if pEl {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
@@ -301,26 +309,34 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		}
 
 	}
+	//Считаем сумму как сумму позиций
+	ordSum = 0
 	for _, pos := range o.Positions {
 		price, err := strToFloat(pos.Price)
 		if err != nil {
 			log.Println("--ошибка конвертации цены в float: ", err)
 			return err
 		}
-		/* cnt, err := strconv.Atoi(pos.Cnt)
+		cnt, err := strToFloat(pos.Cnt)
 		if err != nil {
-			log.Println("--ошибка конвертации количество в int: ", err)
+			log.Println("--ошибка конвертации количество в float: ", err)
 			return err
-		} */
+		}
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_COMMODITY_NAME, pos.Good)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRICE, price)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, pos.Cnt)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
 		k.setTax(pos.Tax)
 		err = k.fptr.Registration()
 		if err != nil {
 			log.Println("--ошибка регистрации позиции: ", err)
 			return err
 		}
+		s, err := strToFloat(pos.Sum)
+		if err != nil {
+			log.Println("--ошибка конвертации суммы позиции в float: ", err)
+			return err
+		}
+		ordSum = ordSum + s
 	}
 	//pType = 0 = fptr10.LIBFPTR_PT_cache - наличные, pType = 1 = fptr10.LIBFPTR_PT_ELECTRONICALLY - безнал
 	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PAYMENT_TYPE, pType)

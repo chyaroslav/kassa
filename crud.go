@@ -20,7 +20,7 @@ type Position struct {
 	Gr      string `db:"GR"`
 	Good    string `db:"GOOD"`
 	Price   string `db:"PRICE"`
-	Cnt     int    `db:"CNT"`
+	Cnt     string `db:"CNT"`
 	Sum     string `db:"SUM"`
 	Pws     string `db:"PWS"`
 	Tax     string `db:"TAX"`
@@ -63,7 +63,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	k.ordCache[ordId] = &o
 	//Получаем позиции накладной
 	qSel = `select barcode,t.Группа_тмц gr,t.Товар good,t.цена price,t.КОЛ_ВО cnt,t.сумма sum,t.ЦЕНА_БЕЗ_СКИДКИ pws,t.СТАВКА_НАЛОГА tax 
-from позиции_тмц_ккм t where t.НАКЛ_УИД=:1`
+from позиции_тмц_ккм_нов t where t.НАКЛ_УИД=:1`
 	ps := []*Position{}
 	err = k.db.Select(&ps, qSel, ordId)
 	if err != nil {

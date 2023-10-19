@@ -6,6 +6,7 @@ kkmbtn = document.getElementById('ChangeKKMStatus');
 shiftstatus = document.getElementById('shiftStatus');
 shiftbtn = document.getElementById('ChangeShiftStatus');
 printbtn = document.getElementById('printOrd');
+printbtn.disabled = false
 crbtn = document.getElementById('CancelReciept');
 apBtn = document.getElementById('AutoPrint');
 var ws = new WebSocket('ws://'+document.location.host+'/ws');
@@ -158,14 +159,14 @@ function setShift(){
     shiftstatus.innerText=items.Text;
     if (items.EvtParam==0) {
         shiftbtn.innerText = "Открыть смену";
-        printbtn.disabled = true;
+        //printbtn.disabled = true;
         crbtn.disabled = true;
         apBtn.disabled = true;
         return;
     }
     if (items.EvtParam==1) {
         shiftbtn.innerText = "Закрыть смену";
-        printbtn.disabled = false;
+        //printbtn.disabled = false;
         crbtn.disabled = false;
         apBtn.disabled = false;
         return;
