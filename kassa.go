@@ -128,8 +128,8 @@ func (k *K) cancelReceipt() error {
 func (k *K) checkPaper() bool {
 	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_DATA_TYPE, fptr10.LIBFPTR_DT_STATUS)
 	k.fptr.QueryData()
-	isPaperNearEnd := k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_PAPER_NEAR_END)
-	return isPaperNearEnd
+	isPaperPresent := k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_RECEIPT_PAPER_PRESENT)
+	return isPaperPresent
 }
 
 // Открытие смены
@@ -244,7 +244,7 @@ func strToFloat(s string) (float64, error) {
 	s1 := strings.ReplaceAll(s, " ", "")
 	//Заменяем зпт на точку
 	s1 = strings.Replace(s1, ",", ".", 1)
-	f, err := strconv.ParseFloat(s1, 32)
+	f, err := strconv.ParseFloat(s1, 64)
 	if err != nil {
 		//log.Println(err.Error())
 		return 0, err

@@ -493,13 +493,18 @@ func (k *K) task1() {
 		log.Println("ККМ занят, выходим.")
 		return
 	}
+	if !k.checkPaper() {
+		k.sendLogMsg("Нет бумаги, выходим...")
+		return
+	}
 	//блокируем ККМ
 	k.kkm.IsKKMBusy = true
 	apErr, apSuc, err := k.AutoPrint()
 	if err != nil {
 		k.sendLogMsg("Авто печать завершилась не удачно: " + err.Error())
-		//log.Println("Останавливаем планировщик..")
-		//k.s.Stop()
+
+		//отпускаем ККМ
+		k.kkm.IsKKMBusy = false
 		return
 	}
 	if apErr > 0 || apSuc > 0 {
@@ -513,6 +518,10 @@ func (k *K) task2() {
 	k.sendLogMsg("Запускается задание переоткрытия смены")
 	if k.kkm.IsKKMBusy {
 		k.sendLogMsg("ККМ занят, выходим.")
+		return
+	}
+	if !k.checkPaper() {
+		k.sendLogMsg("Нет бумаги, выходим...")
 		return
 	}
 	//блокируем ККМ
