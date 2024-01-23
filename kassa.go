@@ -352,8 +352,8 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		log.Println("--ошибка закрытия чека: ", err)
 		return err
 	}
-	if k.checkPaper() {
+	/* if k.checkPaper() {
 		k.sendLogMsg("ВНИМАНИЕ! Заканчивается чековая лента")
-	}
+	} */
 	return nil
 }
