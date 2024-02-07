@@ -569,7 +569,7 @@ func sendTGmsg(chatId string, a ...any) error {
 		msg = msg + fmt.Sprintf("%v", a[i])
 	}
 	params := url.Values{}
-	params.Add("chat_id", `-959917912`)
+	params.Add("chat_id", chatId)
 	params.Add("text", msg)
 	body := strings.NewReader(params.Encode())
 
