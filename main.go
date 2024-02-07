@@ -498,7 +498,11 @@ func (k *K) task1() {
 	}
 	if !k.checkPaper() {
 		k.sendLogMsg("Нет бумаги, выходим...")
-		sendTGmsg(k.params.UserChatID, "В ККМ нет бумаги...")
+		log.Println("userchatid:", k.params.UserChatID)
+		err := sendTGmsg(k.params.UserChatID, "В ККМ нет бумаги...")
+		if err != nil {
+			log.Println("Error sending to user chat ", err)
+		}
 		return
 	}
 	//блокируем ККМ
