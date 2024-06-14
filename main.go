@@ -51,6 +51,7 @@ type P struct {
 	TGnotification bool   // Дополнительно к логу оповещать в телеграмм
 	AdminChatID    string // ChatId чата администраторов.
 	UserChatID     string // ChatId чата пользователей.
+	CompanyName    string
 }
 
 /*

@@ -238,7 +238,13 @@ func (k *K) setTax(tax string) {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_NO)
 	}
 }
-
+func (k *K) setCustomParams() {
+	switch k.params.CompanyName {
+	case "derufa":
+		k.fptr.SetParam(2108, 0)
+		log.Println("derufa param 2108 set to 0")
+	}
+}
 func strToFloat(s string) (float64, error) {
 	//Удаляем пробелы
 	s1 := strings.ReplaceAll(s, " ", "")
@@ -326,6 +332,7 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRICE, price)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
 		k.setTax(pos.Tax)
+		k.setCustomParams()
 		err = k.fptr.Registration()
 		if err != nil {
 			log.Println("--ошибка регистрации позиции: ", err)
