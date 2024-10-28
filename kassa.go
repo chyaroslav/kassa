@@ -245,6 +245,16 @@ func (k *K) setCustomParams() {
 		log.Println("derufa param 2108 set to 0")
 	}
 }
+func (k *K) setRCustomParams(o *O) {
+	switch k.params.CompanyName {
+	case "derufa":
+		a, _ := strconv.Atoi(o.Adv)
+		if a == 1 {
+			k.fptr.SetParam(1214, 3)
+			log.Println("derufa param 1214 set to 3")
+		}
+	}
+}
 func strToFloat(s string) (float64, error) {
 	//Удаляем пробелы
 	s1 := strings.ReplaceAll(s, " ", "")
@@ -333,6 +343,8 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
 		k.setTax(pos.Tax)
 		k.setCustomParams()
+		//Код который по параметру накладной устанавливает параметр позиции в зависимости от компании
+		k.setRCustomParams(o)
 		err = k.fptr.Registration()
 		if err != nil {
 			log.Println("--ошибка регистрации позиции: ", err)

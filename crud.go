@@ -13,6 +13,7 @@ type O struct {
 	OrderSum  string `db:"ORDERSUM" form:"ordersum" json:"ordersum"`
 	Desc      string `db:"DESCRIPTION" form:"desc" json:"desc"`
 	Email     string `db:"EMAIL" form:"email" json:"email"`
+	Adv       string `db:"ADV" form:"adv" json:"adv"`
 	Positions []*Position
 }
 type Position struct {
@@ -45,7 +46,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	//Получаем данные накладной
 	qSel := `select t2.УИД orderid, t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
-	t2.email Email 
+	t2.email Email, t2.АВАНС  Adv  
 	from накладные_ккм t2 where t2.УИД=:1`
 	/* type ord struct {
 		OrderId  string  `db:"ORDERID"`
@@ -77,7 +78,7 @@ from позиции_тмц_ккм_нов t where t.НАКЛ_УИД=:1`
 func (k *K) getOrders(date string) ([]*O, error) {
 	qSel := `select t2.УИД orderid, t2.НОМЕР ordernum, t2.КЛ_НАИМЕНОВАНИЕ client, t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
-	t2.email Email 
+	t2.email Email,  t2.АВАНС Adv
 	from накладные_ккм t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
 	orders := []*O{}
 	err := k.db.Select(&orders, qSel, k.params.OrgID, date)
