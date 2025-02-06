@@ -150,7 +150,7 @@ func (k *K) openShift() error {
 	}
 	log.Println("--Operator: ", k.kkm.OperName, " successfully logged in")
 	log.Println("--Trying to open shift...")
-	k.fptr.OpenShift()
+	err = k.fptr.OpenShift()
 	if err != nil {
 		log.Println("--Error while Open Shift in KKM: ", err)
 		return err
@@ -236,6 +236,10 @@ func (k *K) setTax(tax string) {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT10)
 	case "1":
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_NO)
+	case "5":
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT105)
+	case "7":
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT107)
 	}
 }
 func (k *K) setCustomParams() {

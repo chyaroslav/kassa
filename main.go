@@ -316,7 +316,7 @@ func (k *K) writeMessages(w *websocket.Conn) {
 func (k *K) writeMsg(class string, text string, evt int, evtParam int) {
 	m := msg{Class: class, Text: text, EventId: 0}
 	go func() {
-		//log.Println("writing to chan..")
+		log.Println("writing to chan..", evt, " ", evtParam)
 		k.msgChan <- m
 	}()
 }
