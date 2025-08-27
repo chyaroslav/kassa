@@ -153,7 +153,8 @@ func (k *K) openShift() error {
 	err = k.fptr.OpenShift()
 	if err != nil {
 		log.Println("--Error while Open Shift in KKM: ", err)
-		return err
+		//return err
+		//Убрали выход и выдачу ошибки так как смена может быть уже открыта
 	}
 	log.Println("--Shift successfully opened")
 	log.Println("--Check unclosed documents...")
@@ -237,19 +238,20 @@ func (k *K) setTax(tax string) {
 	case "1":
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_NO)
 	case "5":
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT105)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT5)
 	case "7":
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT107)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT7)
 	}
 }
-func (k *K) setCustomParams() {
+
+/* func (k *K) setCustomParams() {
 	switch k.params.CompanyName {
 	case "derufa":
 		k.fptr.SetParam(2108, 0)
 		log.Println("derufa param 2108 set to 0")
 	}
-}
-func (k *K) setRCustomParams(o *O) {
+} */
+/* func (k *K) setRCustomParams(o *O) {
 	switch k.params.CompanyName {
 	case "derufa":
 		a, _ := strconv.Atoi(o.Adv)
@@ -258,7 +260,7 @@ func (k *K) setRCustomParams(o *O) {
 			log.Println("derufa param 1214 set to 3")
 		}
 	}
-}
+} */
 func strToFloat(s string) (float64, error) {
 	//Удаляем пробелы
 	s1 := strings.ReplaceAll(s, " ", "")
@@ -346,9 +348,15 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRICE, price)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
 		k.setTax(pos.Tax)
-		k.setCustomParams()
+		k.fptr.SetParam(2108, 0) //устанавливаем measurementUnit=0 - piece - штуки, единицы
+		//k.setCustomParams()
 		//Код который по параметру накладной устанавливает параметр позиции в зависимости от компании
-		k.setRCustomParams(o)
+		//k.setRCustomParams(o) -- пока не используется
+		adv, _ := strconv.Atoi(o.Adv)
+		if adv == 1 {
+			//устанавливаем тип платежа Аванс если это указано в накладной (поле Adv=1) пока используется только в деруфе
+			k.fptr.SetParam(1214, 3)
+		}
 		err = k.fptr.Registration()
 		if err != nil {
 			log.Println("--ошибка регистрации позиции: ", err)
