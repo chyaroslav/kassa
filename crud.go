@@ -6,6 +6,11 @@ import (
 	_ "github.com/godror/godror"
 )
 
+const (
+	tOrder = "НАКЛАДНЫЕ_ККМ_ЧЗ"   //вью с накладными
+	tPos   = "ПОЗИЦИИ_ТМЦ_ККМ_ЧЗ" //вью с позициями
+)
+
 type O struct {
 	OrderId   string `db:"ORDERID" form:"orderid" json:"orderid"`
 	OrderNum  string `db:"ORDERNUM" form:"ordernum" json:"ordernum"`
@@ -25,6 +30,7 @@ type Position struct {
 	Sum     string `db:"SUM"`
 	Pws     string `db:"PWS"`
 	Tax     string `db:"TAX"`
+	Kiz     string `db:"KIZ"`
 }
 type apOrder struct {
 	OrderId string `db:"ORDERID"`
@@ -47,7 +53,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	qSel := `select t2.УИД orderid, t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
 	t2.email Email, t2.АВАНС  Adv  
-	from накладные_ккм t2 where t2.УИД=:1`
+	from ` + tOrder + `t2 where t2.УИД=:1`
 	/* type ord struct {
 		OrderId  string  `db:"ORDERID"`
 		OrderSum float32 `db:"ORDERSUM"`
@@ -63,8 +69,16 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	//o := O{OrderId: ot.OrderId, OrderSum: ot.OrderSum, Desc: ot.Desc, Email: ot.Email, Positions: nil}
 	k.ordCache[ordId] = &o
 	//Получаем позиции накладной
-	qSel = `select barcode,t.Группа_тмц gr,t.Товар good,t.цена price,t.КОЛ_ВО cnt,t.сумма sum,t.ЦЕНА_БЕЗ_СКИДКИ pws,t.СТАВКА_НАЛОГА tax 
-from позиции_тмц_ккм_нов t where t.НАКЛ_УИД=:1`
+	qSel = `select barcode,
+	t.Группа_тмц gr,
+	t.Товар good,
+	t.цена price,
+	t.КОЛ_ВО cnt,
+	t.сумма sum,
+	t.ЦЕНА_БЕЗ_СКИДКИ pws,
+	t.СТАВКА_НАЛОГА tax,
+	t.КИЗ kiz,
+from` + tPos + `t where t.НАКЛ_УИД=:1`
 	ps := []*Position{}
 	err = k.db.Select(&ps, qSel, ordId)
 	if err != nil {
@@ -76,10 +90,14 @@ from позиции_тмц_ккм_нов t where t.НАКЛ_УИД=:1`
 }
 
 func (k *K) getOrders(date string) ([]*O, error) {
-	qSel := `select t2.УИД orderid, t2.НОМЕР ordernum, t2.КЛ_НАИМЕНОВАНИЕ client, t2.СУММА ordersum,
+	qSel := `select t2.УИД orderid, 
+	t2.НОМЕР ordernum, 
+	t2.КЛ_НАИМЕНОВАНИЕ client, 
+	t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
-	t2.email Email,  t2.АВАНС Adv
-	from накладные_ккм t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
+	t2.email Email,  
+	t2.АВАНС Adv
+	from ` + tOrder + ` t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
 	orders := []*O{}
 	err := k.db.Select(&orders, qSel, k.params.OrgID, date)
 	if err != nil {
@@ -92,7 +110,7 @@ func (k *K) getOrders(date string) ([]*O, error) {
 // Выдаем список накладных для авто-печати
 func (k *K) getAPOrders() ([]*apOrder, error) {
 	qSel := `select t2.УИД orderid, decode(t2.ТИП_ОПЛАТЫ,'Н',0,'Б',1) pType
-	from накладные_ккм t2 where
+	from ` + tOrder + `t2 where
 	t2.уид in (select п.накл_уид from позиции_характеристик_накл п where п.хар_накл_уид=60 and п.значение='1')`
 	// запрос для теста.
 	/* qSel := `select t2.УИД orderid, decode(t2.ТИП_ОПЛАТЫ,'Н',0,'Б',1) pType

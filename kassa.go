@@ -344,6 +344,31 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 			log.Println("--ошибка конвертации количество в float: ", err)
 			return err
 		}
+		// Запускаем проверку КМ
+		log.Println("Начинаем проверку КМ")
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_TYPE, fptr10.LIBFPTR_MCT12_AUTO)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_DRY_FOR_SALE)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, 1.000)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MEASUREMENT_UNIT, fptr10.LIBFPTR_IU_PIECE)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+		k.fptr.BeginMarkingCodeValidation()
+		// Дожидаемся окончания проверки и запоминаем результат
+		for {
+			k.fptr.GetMarkingCodeValidationStatus()
+			if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
+				break
+			}
+		}
+		validationResult := k.fptr.GetParamInt(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT)
+		log.Println("Проверка КМ завершена")
+
+		// Подтверждаем реализацию товара с указанным КМ
+		k.fptr.AcceptMarkingCode()
+
+		//-------------------завершили проверку КМ----------------
+
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_COMMODITY_NAME, pos.Good)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRICE, price)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
@@ -352,9 +377,16 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//k.setCustomParams()
 		//Код который по параметру накладной устанавливает параметр позиции в зависимости от компании
 		//k.setRCustomParams(o) -- пока не используется
+		//параметры для маркировки:
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_DRY_FOR_SALE)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, validationResult)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
+		//устанавливаем тип платежа Аванс если это указано в накладной (поле Adv=1) пока используется только в деруфе
 		adv, _ := strconv.Atoi(o.Adv)
 		if adv == 1 {
-			//устанавливаем тип платежа Аванс если это указано в накладной (поле Adv=1) пока используется только в деруфе
+
 			k.fptr.SetParam(1214, 3)
 		}
 		err = k.fptr.Registration()
@@ -377,6 +409,13 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 	if err != nil {
 		log.Println("--ошибка осуществления платежа: ", err)
 		return err
+	}
+	// Перед закрытием проверяем, что все КМ отправились (на случай, если были проверки КМ без ожидания результата
+	for {
+		k.fptr.CheckMarkingCodeValidationsReady()
+		if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
+			break
+		}
 	}
 	err = k.fptr.CloseReceipt()
 	if err != nil {
