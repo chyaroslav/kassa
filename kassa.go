@@ -294,6 +294,7 @@ func (k *K) checkKM(o *O) error {
 	errorDescription := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MARKING_SERVER_ERROR_DESCRIPTION)
 	log.Println("отклик сервера маркировки:", k.fptr.GetParamInt(fptr10.LIBFPTR_PARAM_MARKING_SERVER_RESPONSE_TIME))
 	if errorCode != 0 {
+		log.Println("ism error code:", errorCode, " ", errorDescription)
 		return errors.New(errorDescription)
 	}
 	// Запускаем проверку КМ
