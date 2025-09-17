@@ -54,7 +54,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	qSel := `select t2.УИД orderid, t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
 	t2.email Email, t2.АВАНС  Adv  
-	from ` + tOrder + `t2 where t2.УИД=:1`
+	from ` + tOrder + ` t2 where t2.УИД=:1`
 	/* type ord struct {
 		OrderId  string  `db:"ORDERID"`
 		OrderSum float32 `db:"ORDERSUM"`
@@ -79,7 +79,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	t.ЦЕНА_БЕЗ_СКИДКИ pws,
 	t.СТАВКА_НАЛОГА tax,
 	t.КИЗ kiz,
-from` + tPos + `t where t.НАКЛ_УИД=:1`
+from ` + tPos + ` t where t.НАКЛ_УИД=:1`
 	ps := []*Position{}
 	err = k.db.Select(&ps, qSel, ordId)
 	if err != nil {
