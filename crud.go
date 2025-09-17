@@ -22,15 +22,16 @@ type O struct {
 	Positions []*Position
 }
 type Position struct {
-	Barcode string `db:"BARCODE"`
-	Gr      string `db:"GR"`
-	Good    string `db:"GOOD"`
-	Price   string `db:"PRICE"`
-	Cnt     string `db:"CNT"`
-	Sum     string `db:"SUM"`
-	Pws     string `db:"PWS"`
-	Tax     string `db:"TAX"`
-	Kiz     string `db:"KIZ"`
+	Barcode   string `db:"BARCODE"`
+	Gr        string `db:"GR"`
+	Good      string `db:"GOOD"`
+	Price     string `db:"PRICE"`
+	Cnt       string `db:"CNT"`
+	Sum       string `db:"SUM"`
+	Pws       string `db:"PWS"`
+	Tax       string `db:"TAX"`
+	Kiz       string `db:"KIZ"`
+	Km_status uint   //статус проверки КМ, заполняется уже перед печатью чека при проверке КМ на сервере
 }
 type apOrder struct {
 	OrderId string `db:"ORDERID"`
