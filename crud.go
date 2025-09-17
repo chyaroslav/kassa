@@ -78,7 +78,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	t.сумма sum,
 	t.ЦЕНА_БЕЗ_СКИДКИ pws,
 	t.СТАВКА_НАЛОГА tax,
-	t.КИЗ kiz,
+	t.КИЗ kiz
 from ` + tPos + ` t where t.НАКЛ_УИД=:1`
 	ps := []*Position{}
 	err = k.db.Select(&ps, qSel, ordId)
