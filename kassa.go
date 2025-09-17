@@ -326,6 +326,7 @@ func (k *K) checkKM(o *O) error {
 // Печать позиций накладной на ККМ, параметры: накл_уид; тип оплаты 0-нал, 1-безнал; электронный чек true\false
 func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 	var ordSum float64
+
 	log.Println("--Starting print order")
 	o, err := k.getOrder(ordId)
 	if err != nil {
@@ -347,9 +348,12 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		return err
 	}
 	//Проверка кода маркировки с заполнением статусов проверки для добавления в чек
+	km_checked := true
 	err = k.checkKM(o)
 	if err != nil {
 		log.Println("--ошибка проверки кодов маркировки ", err)
+		km_checked = false
+		return err //временный выход чтобы не печатать без КМ
 	}
 	if ordSum < 0 {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_TYPE, fptr10.LIBFPTR_RT_SELL_RETURN)
@@ -407,12 +411,14 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//k.setCustomParams()
 		//Код который по параметру накладной устанавливает параметр позиции в зависимости от компании
 		//k.setRCustomParams(o) -- пока не используется
-		//параметры для маркировки:
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_DRY_FOR_SALE)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, pos.Km_status)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
+		if km_checked {
+			//параметры для маркировки:
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_DRY_FOR_SALE)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, pos.Km_status)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
+		}
 		//устанавливаем тип платежа Аванс если это указано в накладной (поле Adv=1) пока используется только в деруфе
 		adv, _ := strconv.Atoi(o.Adv)
 		if adv == 1 {
