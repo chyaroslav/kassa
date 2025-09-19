@@ -415,6 +415,7 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//k.setRCustomParams(o) -- пока не используется
 		if km_checked {
 			//параметры для маркировки:
+			log.Println("Устанавливаем параметры маркировки: КМ", pos.Kiz, "статус проверки:", pos.Km_status)
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_DRY_FOR_SALE)
