@@ -279,6 +279,7 @@ func strToFloat(s string) (float64, error) {
 func (k *K) checkKM(o *O) error {
 
 	k.fptr.UpdateFnmKeys()
+	k.fptr.ClearMarkingCodeValidationResult()
 	log.Println("Результат обновления ключей:", k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MARKING_SERVER_ERROR_DESCRIPTION))
 	err := k.fptr.PingMarkingServer()
 	log.Println("пинг сервера ИСМ:", err)
@@ -300,16 +301,18 @@ func (k *K) checkKM(o *O) error {
 	}
 	// Запускаем проверку КМ
 	for _, pos := range o.Positions {
-		runes := []rune(pos.Kiz)
-		log.Printf("Начинаем проверку КМ:%v ", runes)
+		//runes := []rune(pos.Kiz)
+		//log.Printf("Начинаем проверку КМ:%v ", runes)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_TYPE, fptr10.LIBFPTR_MCT12_AUTO)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, 1.000)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_WAIT_FOR_VALIDATION_RESULT, true)
+		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, 1.000)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MEASUREMENT_UNIT, fptr10.LIBFPTR_IU_PIECE)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
 		k.fptr.BeginMarkingCodeValidation()
+		time.Sleep(5 * time.Second)
 		// Дожидаемся окончания проверки и запоминаем результат
 		/* for {
 			k.fptr.GetMarkingCodeValidationStatus()
@@ -317,6 +320,7 @@ func (k *K) checkKM(o *O) error {
 				break
 			}
 		} */
+		log.Println("Готовность проверки маркировки:", k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY))
 		pos.Km_status = k.fptr.GetParamInt(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT)
 		// Подтверждаем реализацию товара с указанным КМ
 		log.Println("проверка маркировки товара:", pos.Good, " статус:", pos.Km_status)
@@ -418,9 +422,9 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		if km_checked {
 			//параметры для маркировки:
 			log.Println("Устанавливаем параметры маркировки: КМ:", pos.Kiz, "статус проверки:", pos.Km_status)
-			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+			//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
-			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_DRY_FOR_SALE)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, pos.Km_status)
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
 		}
