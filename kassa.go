@@ -285,8 +285,8 @@ func (k *K) checkKM(o *O) error {
 	log.Println("пинг сервера ИСМ:", err)
 	// Ожидание результатов проверки связи с сервером ИСМ
 	for {
+		time.Sleep(1 * time.Second)
 		k.fptr.GetMarkingServerStatus()
-
 		if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_CHECK_MARKING_SERVER_READY) {
 			log.Println("Сервер ИСМ доступен")
 			break
@@ -326,7 +326,7 @@ func (k *K) checkKM(o *O) error {
 		// Подтверждаем реализацию товара с указанным КМ
 		log.Println("проверка маркировки товара:", pos.Good, " статус:", pos.Km_status)
 		k.fptr.AcceptMarkingCode()
-		k.fptr.ClearMarkingCodeValidationResult()
+		//k.fptr.ClearMarkingCodeValidationResult()
 	}
 	log.Println("Проверка КМ завершена")
 	return nil
