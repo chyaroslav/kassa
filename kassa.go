@@ -302,7 +302,7 @@ func (k *K) checkKM(o *O) error {
 	// Запускаем проверку КМ
 	for _, pos := range o.Positions {
 		//runes := []rune(pos.Kiz)
-		//log.Printf("Начинаем проверку КМ:%v ", runes)
+		log.Printf("Начинаем проверку КМ\n")
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_TYPE, fptr10.LIBFPTR_MCT12_AUTO)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
@@ -312,14 +312,14 @@ func (k *K) checkKM(o *O) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
 		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
 		k.fptr.BeginMarkingCodeValidation()
-		time.Sleep(5 * time.Second)
+		//time.Sleep(5 * time.Second)
 		// Дожидаемся окончания проверки и запоминаем результат
-		/* for {
+		for {
 			k.fptr.GetMarkingCodeValidationStatus()
 			if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
 				break
 			}
-		} */
+		}
 		log.Println("Готовность проверки маркировки:", k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY))
 		pos.Km_status = k.fptr.GetParamInt(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT)
 		// Подтверждаем реализацию товара с указанным КМ
