@@ -300,7 +300,8 @@ func (k *K) checkKM(o *O) error {
 	}
 	// Запускаем проверку КМ
 	for _, pos := range o.Positions {
-		log.Println("Начинаем проверку КМ")
+		runes := []rune(pos.Kiz)
+		log.Printf("Начинаем проверку КМ:%v ", runes)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_TYPE, fptr10.LIBFPTR_MCT12_AUTO)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
