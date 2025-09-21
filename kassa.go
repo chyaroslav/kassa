@@ -325,7 +325,9 @@ func (k *K) checkKM(o *O) error {
 			}
 		} */
 		if !k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
-			log.Println("Готовность проверки маркировки: false, выходим")
+			k.fptr.DeclineMarkingCode()
+			k.fptr.CancelMarkingCodeValidation()
+			log.Println("Готовность проверки маркировки: false, выходим..")
 			return err
 		}
 		pos.Km_status = k.fptr.GetParamInt(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT)
