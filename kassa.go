@@ -280,7 +280,7 @@ func (k *K) checkKM(o *O) error {
 
 	k.fptr.UpdateFnmKeys()
 	k.fptr.ClearMarkingCodeValidationResult()
-	log.Println("Результат обновления ключей:", k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MARKING_SERVER_ERROR_DESCRIPTION))
+	//log.Println("Результат обновления ключей:", k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MARKING_SERVER_ERROR_DESCRIPTION))
 	err := k.fptr.PingMarkingServer()
 	log.Println("пинг сервера ИСМ:", err)
 	// Ожидание результатов проверки связи с сервером ИСМ
@@ -307,12 +307,13 @@ func (k *K) checkKM(o *O) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_WAIT_FOR_VALIDATION_RESULT, true)
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TIMEOUT, 10000)
-		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, 1.000)
-		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MEASUREMENT_UNIT, fptr10.LIBFPTR_IU_PIECE)
+		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TIMEOUT, 10000)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, 1.000)
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MEASUREMENT_UNIT, fptr10.LIBFPTR_IU_PIECE)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
 		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
 		k.fptr.BeginMarkingCodeValidation()
+		time.Sleep(5 * time.Second)
 		//time.Sleep(5 * time.Second)
 		// Дожидаемся окончания проверки и запоминаем результат
 		/* for {
