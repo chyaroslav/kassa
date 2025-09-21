@@ -277,12 +277,12 @@ func strToFloat(s string) (float64, error) {
 
 // проверка КМ и заполнение статуса проверки
 func (k *K) checkKM(o *O) error {
-	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRINT_REPORT, false)
-	k.fptr.DeviceReboot()
+	//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRINT_REPORT, false)
+	//k.fptr.DeviceReboot()
 	k.fptr.UpdateFnmKeys()
-	k.fptr.ClearMarkingCodeValidationResult()
-	//log.Println("Результат обновления ключей:", k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MARKING_SERVER_ERROR_DESCRIPTION))
-	err := k.fptr.PingMarkingServer()
+	err := k.fptr.ClearMarkingCodeValidationResult()
+	log.Println("Очистка проверки маркировки:", err)
+	err = k.fptr.PingMarkingServer()
 	log.Println("пинг сервера ИСМ:", err)
 	// Ожидание результатов проверки связи с сервером ИСМ
 	for {
