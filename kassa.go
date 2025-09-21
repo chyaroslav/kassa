@@ -277,7 +277,8 @@ func strToFloat(s string) (float64, error) {
 
 // проверка КМ и заполнение статуса проверки
 func (k *K) checkKM(o *O) error {
-
+	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRINT_REPORT, false)
+	k.fptr.DeviceReboot()
 	k.fptr.UpdateFnmKeys()
 	k.fptr.ClearMarkingCodeValidationResult()
 	//log.Println("Результат обновления ключей:", k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MARKING_SERVER_ERROR_DESCRIPTION))
