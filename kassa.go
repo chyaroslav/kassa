@@ -59,16 +59,19 @@ func (k *K) CheckKKM() (string, error) {
 		log.Println("--KKM initiated successfully")
 	}
 	log.Println("--Query KKM serial number...")
-	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_DATA_TYPE, fptr10.LIBFPTR_DT_SERIAL_NUMBER)
+	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_DATA_TYPE, fptr10.LIBFPTR_DT_STATUS)
 	k.fptr.QueryData()
 	serialNumber := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_SERIAL_NUMBER)
+	modelName := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MODEL_NAME)
+	modelNumber := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_MODEL)
+	firmwareVersion := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_UNIT_VERSION)
 	if serialNumber == "" {
 		log.Println("--Unknown error when query serial number, try to init KKM again")
 		log.Println("CheckKKM finished unsuccessfully")
 		k.fptr = nil
 		return "", nil
 	}
-	log.Println("--KKM serial number is:", serialNumber)
+	log.Printf("--KKM serial number is:%s, Model:%s, ModelNum:%s, FW:%s", serialNumber, modelName, modelNumber, firmwareVersion)
 	log.Println("CheckKKM finished successfully!")
 	return serialNumber, nil
 }
