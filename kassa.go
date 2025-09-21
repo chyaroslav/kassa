@@ -312,8 +312,9 @@ func (k *K) checkKM(o *O) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, 1)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MEASUREMENT_UNIT, fptr10.LIBFPTR_IU_PIECE)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
-		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
-		k.fptr.BeginMarkingCodeValidation()
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+		err = k.fptr.BeginMarkingCodeValidation()
+		log.Println("Ошибка проверки маркировки:", err)
 		time.Sleep(5 * time.Second)
 		//time.Sleep(5 * time.Second)
 		// Дожидаемся окончания проверки и запоминаем результат
@@ -323,7 +324,10 @@ func (k *K) checkKM(o *O) error {
 				break
 			}
 		} */
-		log.Println("Готовность проверки маркировки:", k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY))
+		if !k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
+			log.Println("Готовность проверки маркировки: false, выходим")
+			return err
+		}
 		pos.Km_status = k.fptr.GetParamInt(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT)
 		// Подтверждаем реализацию товара с указанным КМ
 		log.Println("проверка маркировки товара:", pos.Good, " статус:", pos.Km_status)
