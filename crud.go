@@ -7,18 +7,20 @@ import (
 )
 
 const (
-	tOrder = "НАКЛАДНЫЕ_ККМ_ЧЗ"   //вью с накладными
-	tPos   = "ПОЗИЦИИ_ТМЦ_ККМ_ЧЗ" //вью с позициями
+	tOrder = "НАКЛАДНЫЕ_ККМ"       //вью с накладными
+	tPos   = "ПОЗИЦИИ_ТМЦ_ККМ_НОВ" //вью с позициями
 )
 
 type O struct {
-	OrderId   string `db:"ORDERID" form:"orderid" json:"orderid"`
-	OrderNum  string `db:"ORDERNUM" form:"ordernum" json:"ordernum"`
-	Client    string `db:"CLIENT" form:"client" json:"client"`
-	OrderSum  string `db:"ORDERSUM" form:"ordersum" json:"ordersum"`
-	Desc      string `db:"DESCRIPTION" form:"desc" json:"desc"`
-	Email     string `db:"EMAIL" form:"email" json:"email"`
-	Adv       string `db:"ADV" form:"adv" json:"adv"`
+	OrderId  string `db:"ORDERID" form:"orderid" json:"orderid"`
+	OrderNum string `db:"ORDERNUM" form:"ordernum" json:"ordernum"`
+	Client   string `db:"CLIENT" form:"client" json:"client"`
+	OrderSum string `db:"ORDERSUM" form:"ordersum" json:"ordersum"`
+	Desc     string `db:"DESCRIPTION" form:"desc" json:"desc"`
+	Email    string `db:"EMAIL" form:"email" json:"email"`
+	Adv      string `db:"ADV" form:"adv" json:"adv"`
+	Mark     int    `db:"MARK" form:"mark" json:"mark"`
+	//KKM       string `db:"KKM" form:"kkm" json:"kkm"`
 	Positions []*Position
 }
 type Position struct {
@@ -53,7 +55,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	//Получаем данные накладной
 	qSel := `select t2.УИД orderid, t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
-	t2.email Email, t2.АВАНС  Adv  
+	t2.email Email, t2.АВАНС  Adv, t2.МАРКИРОВКА Mark   
 	from ` + tOrder + ` t2 where t2.УИД=:1`
 	/* type ord struct {
 		OrderId  string  `db:"ORDERID"`
@@ -97,7 +99,8 @@ func (k *K) getOrders(date string) ([]*O, error) {
 	t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
 	t2.email Email,  
-	t2.АВАНС Adv
+	t2.АВАНС Adv,
+	t2.МАРКИРОВКА Mark   
 	from ` + tOrder + ` t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
 	orders := []*O{}
 	err := k.db.Select(&orders, qSel, k.params.OrgID, date)
@@ -112,12 +115,13 @@ func (k *K) getOrders(date string) ([]*O, error) {
 func (k *K) getAPOrders() ([]*apOrder, error) {
 	qSel := `select t2.УИД orderid, decode(t2.ТИП_ОПЛАТЫ,'Н',0,'Б',1) pType
 	from ` + tOrder + ` t2 where
+	t2.ккм=:1 and 
 	t2.уид in (select п.накл_уид from позиции_характеристик_накл п where п.хар_накл_уид=60 and п.значение='1')`
 	// запрос для теста.
 	/* qSel := `select t2.УИД orderid, decode(t2.ТИП_ОПЛАТЫ,'Н',0,'Б',1) pType
 	from накладные_ккм t2 where t2.ОРГ_УИД_ЮРЛИЦО=203452 and t2.ДАТА=to_date('2023-06-21','YYYY-MM-DD')` */
 	orders := []*apOrder{}
-	err := k.db.Select(&orders, qSel)
+	err := k.db.Select(&orders, qSel, k.params.Where)
 	if err != nil {
 		log.Println("error in getAPOrders", err.Error())
 		return nil, err

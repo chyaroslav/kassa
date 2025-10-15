@@ -41,6 +41,7 @@ type P struct {
 	OrgID          int
 	KMPort         string
 	KMIP           string
+	Where          string
 	ScanerPort     string
 	EReciept       bool // Не печатать чек на бумаге если true
 	AutoPrint      bool //включение автопечати. веб-хендлеры не загружаются. имя/пароль к БД должны быть заданы в параметрах
