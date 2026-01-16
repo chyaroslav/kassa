@@ -595,7 +595,7 @@ func sendTGmsg(chatId string, a ...any) error {
 func (k *K) sendLogMsg(msg ...any) {
 	log.Println(msg...)
 	if k.params.TGnotification {
-		sendTGmsg(k.params.AdminChatID, msg...)
+		sendTGmsg(k.params.AdminChatID, k.params.KMIP, " ", msg)
 	}
 }
 func (k *K) initCron() {
