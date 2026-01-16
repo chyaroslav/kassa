@@ -245,6 +245,8 @@ func (k *K) setTax(tax string) {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT5)
 	case "7":
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT7)
+	case "22":
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_TAX_TYPE, fptr10.LIBFPTR_TAX_VAT22)
 	}
 }
 
@@ -327,7 +329,7 @@ func (k *K) checkKM(o *O) error {
 			//time.Sleep(5 * time.Second)
 			// Дожидаемся окончания проверки и запоминаем результат
 			for i := 0; i < 3; i++ {
-				time.Sleep(5 * time.Second)
+				time.Sleep(3 * time.Second)
 				k.fptr.GetMarkingCodeValidationStatus()
 				if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
 					break
