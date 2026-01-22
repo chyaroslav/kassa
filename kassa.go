@@ -475,6 +475,11 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		}
 		ordSum = ordSum + s
 	}
+	//Передача уведомления для КМ. Передаем часовой пояс, только если в чеке есть позиции с КМ
+	if km_checked {
+		k.fptr.SetParam(1011, fptr10.LIBFPTR_TIME_ZONE_4)
+		k.fptr.WriteSalesNotice()
+	}
 	//pType = 0 = fptr10.LIBFPTR_PT_cache - наличные, pType = 1 = fptr10.LIBFPTR_PT_ELECTRONICALLY - безнал
 	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PAYMENT_TYPE, pType)
 	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PAYMENT_SUM, ordSum)
