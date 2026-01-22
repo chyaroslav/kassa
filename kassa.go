@@ -332,10 +332,7 @@ func (k *K) checkKM(o *O) error {
 				time.Sleep(3 * time.Second)
 				k.fptr.GetMarkingCodeValidationStatus()
 				if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
-					k.fptr.SetParam(fptr10.LIBFPTR_PARAM_JSON_DATA, "{\"type\": \"getMarkingCodeValidationResult\"}")
-					k.fptr.ProcessJson()
-					result := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_JSON_DATA)
-					log.Println("Ответ драйвера:", result)
+
 					break
 				}
 				log.Println("статус проверки не получен продожаем...")
@@ -472,6 +469,12 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 			log.Println("--ошибка регистрации позиции: ", err)
 			return err
 		}
+		//попытка проверки отраслевого реквизита для разрешительного режима
+		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_JSON_DATA, "{\"type\": \"getMarkingCodeValidationResult\"}")
+		k.fptr.ProcessJson()
+		result := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_JSON_DATA)
+		log.Println("Ответ драйвера после регистрации позиции:", result)
+		//------------
 		s, err := strToFloat(pos.Sum)
 		if err != nil {
 			log.Println("--ошибка конвертации суммы позиции в float: ", err)
