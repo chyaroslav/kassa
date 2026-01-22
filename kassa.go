@@ -508,6 +508,12 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		log.Println("--ошибка закрытия чека: ", err)
 		return err
 	}
+	//Выводим в лог, все что отправилось в ФН
+	k.fptr.SetParam(fptr10.LIBFPTR_PARAM_JSON_DATA, "{\"type\": \"getFnDocument\", \"fiscalDocumentNumber\": 0}")
+	k.fptr.ProcessJson()
+	result := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_JSON_DATA)
+	log.Println("Ответ драйвера после закрытия чека", result)
+	//------------
 	/* if k.checkPaper() {
 		k.sendLogMsg("ВНИМАНИЕ! Заканчивается чековая лента")
 	} */
