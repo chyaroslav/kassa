@@ -332,6 +332,10 @@ func (k *K) checkKM(o *O) error {
 				time.Sleep(3 * time.Second)
 				k.fptr.GetMarkingCodeValidationStatus()
 				if k.fptr.GetParamBool(fptr10.LIBFPTR_PARAM_MARKING_CODE_VALIDATION_READY) {
+					k.fptr.SetParam(fptr10.LIBFPTR_PARAM_JSON_DATA, "{\"type\": \"getMarkingCodeValidationResult\"}")
+					k.fptr.ProcessJson()
+					result := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_JSON_DATA)
+					log.Println("Ответ драйвера:", result)
 					break
 				}
 				log.Println("статус проверки не получен продожаем...")
