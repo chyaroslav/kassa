@@ -440,7 +440,25 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 			log.Println("--ошибка конвертации количество в float: ", err)
 			return err
 		}
+		if km_checked && pos.Km_status == 15 {
+			//параметры для маркировки:
+			log.Println("Устанавливаем параметры маркировки: КМ:", pos.Kiz, "статус проверки:", pos.Km_status)
+			//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
+			//заполняем отраслевой реквизит для передачи данных о проверке КМ для разрешительного режима
+			k.fptr.SetParam(1262, "030")
+			k.fptr.SetParam(1263, "21.11.2023")
+			k.fptr.SetParam(1264, "1944")
+			k.fptr.SetParam(1265, fmt.Sprintf("UUID=%s&Time=%s", pos.Km_uid, pos.Km_date))
+			k.fptr.UtilFormTlv()
+			kmInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
+			k.fptr.SetParam(1260, kmInfo)
+			//-------
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, pos.Km_status)
+			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
 
+		}
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_COMMODITY_NAME, pos.Good)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_PRICE, price)
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_QUANTITY, cnt)
@@ -450,23 +468,6 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//Код который по параметру накладной устанавливает параметр позиции в зависимости от компании
 		//k.setRCustomParams(o) -- пока не используется
 
-		if km_checked && pos.Km_status == 15 {
-			//параметры для маркировки:
-			log.Println("Устанавливаем параметры маркировки: КМ:", pos.Kiz, "статус проверки:", pos.Km_status)
-			//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_FRACTIONAL_QUANTITY, "1/2")
-			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE, pos.Kiz)
-			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
-			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, pos.Km_status)
-			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
-			//заполняем отраслевой реквизит для передачи данных о проверке КМ для разрешительного режима
-			k.fptr.SetParam(1262, "030")
-			k.fptr.SetParam(1263, "21.11.2023")
-			k.fptr.SetParam(1264, "1944")
-			k.fptr.SetParam(1265, fmt.Sprintf("UUID=%s&Time=%s", pos.Km_uid, pos.Km_date))
-			k.fptr.UtilFormTlv()
-			kmInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
-			k.fptr.SetParam(1260, kmInfo)
-		}
 		//устанавливаем тип платежа Аванс если это указано в накладной (поле Adv=1) пока используется только в деруфе
 		adv, _ := strconv.Atoi(o.Adv)
 		if adv == 1 {
