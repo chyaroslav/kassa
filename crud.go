@@ -33,6 +33,8 @@ type Position struct {
 	Pws       string `db:"PWS"`
 	Tax       string `db:"TAX"`
 	Kiz       string `db:"KIZ"`
+	Km_uid    string `db:"UUID"`
+	Km_date   string `db:"TIMEDATA"`
 	Km_status uint   //статус проверки КМ, заполняется уже перед печатью чека при проверке КМ на сервере
 }
 type apOrder struct {
@@ -80,7 +82,9 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	t.сумма sum,
 	t.ЦЕНА_БЕЗ_СКИДКИ pws,
 	t.СТАВКА_НАЛОГА tax,
-	t.КИЗ kiz
+	t.КИЗ kiz,
+	t.UUID km_uid,
+	t.TIMEDATA km_date
 from ` + tPos + ` t where t.НАКЛ_УИД=:1`
 	ps := []*Position{}
 	err = k.db.Select(&ps, qSel, ordId)

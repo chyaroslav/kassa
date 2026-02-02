@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"kassa/fptr10"
 	"log"
 	"strconv"
@@ -457,6 +458,14 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_STATUS, fptr10.LIBFPTR_MES_PIECE_SOLD)
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_CODE_ONLINE_VALIDATION_RESULT, pos.Km_status)
 			k.fptr.SetParam(fptr10.LIBFPTR_PARAM_MARKING_PROCESSING_MODE, 0)
+			//заполняем отраслевой реквизит для передачи данных о проверке КМ для разрешительного режима
+			k.fptr.SetParam(1262, "030")
+			k.fptr.SetParam(1263, "21.11.2023")
+			k.fptr.SetParam(1264, "1944")
+			k.fptr.SetParam(1265, fmt.Sprintf("UUID=%s&Time=%s", pos.Km_uid, pos.Km_date))
+			k.fptr.UtilFormTlv()
+			kmInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
+			k.fptr.SetParam(1260, kmInfo)
 		}
 		//устанавливаем тип платежа Аванс если это указано в накладной (поле Adv=1) пока используется только в деруфе
 		adv, _ := strconv.Atoi(o.Adv)
