@@ -477,6 +477,9 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		err = k.fptr.Registration()
 		if err != nil {
 			log.Println("--ошибка регистрации позиции: ", err)
+			//Ошибка регистрации позиции скорее всего из-за слишком большой накладной или не правильных данных. Наклакдную надо перечитать
+			log.Println("Удаляем из кэша накладную:", ordId)
+			delete(k.ordCache, ordId)
 			return err
 		}
 		//попытка проверки отраслевого реквизита для разрешительного режима
