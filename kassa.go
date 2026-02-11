@@ -483,10 +483,10 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 			return err
 		}
 		//попытка проверки отраслевого реквизита для разрешительного режима
-		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_JSON_DATA, "{\"type\": \"getMarkingCodeValidationResult\"}")
-		k.fptr.ProcessJson()
-		result := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_JSON_DATA)
-		log.Println("Ответ драйвера после регистрации позиции:", result)
+		//k.fptr.SetParam(fptr10.LIBFPTR_PARAM_JSON_DATA, "{\"type\": \"getMarkingCodeValidationResult\"}")
+		//k.fptr.ProcessJson()
+		//result := k.fptr.GetParamString(fptr10.LIBFPTR_PARAM_JSON_DATA)
+		//log.Println("Ответ драйвера после регистрации позиции:", result)
 		//------------
 		s, err := strToFloat(pos.Sum)
 		if err != nil {
