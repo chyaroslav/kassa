@@ -386,6 +386,13 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
 		//k.fptr.SetParam(1256, clientInfo)
 	}
+	//Прописываем в чек ИНН если заполнен (для Юрлиц опт)
+	if o.Inn != "" {
+		k.fptr.SetParam(1228, o.Inn)
+		//k.fptr.UtilFormTlv()
+		//clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
+		//k.fptr.SetParam(1256, clientInfo)
+	}
 	log.Println("sum:", o.OrderSum)
 	ordSum, err = strToFloat(o.OrderSum)
 	if err != nil {

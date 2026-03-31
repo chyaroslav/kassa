@@ -20,6 +20,7 @@ type O struct {
 	Email    string `db:"EMAIL" form:"email" json:"email"`
 	Adv      string `db:"ADV" form:"adv" json:"adv"`
 	Mark     int    `db:"MARK" form:"mark" json:"mark"`
+	Inn      string `db:"INN" form:"inn" json:"inn"`
 	//KKM       string `db:"KKM" form:"kkm" json:"kkm"`
 	Positions []*Position
 }
@@ -104,7 +105,8 @@ func (k *K) getOrders(date string) ([]*O, error) {
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
 	t2.email Email,  
 	t2.АВАНС Adv,
-	t2.МАРКИРОВКА Mark   
+	t2.МАРКИРОВКА Mark,   
+	t2.ИНН inn
 	from ` + tOrder + ` t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
 	orders := []*O{}
 	err := k.db.Select(&orders, qSel, k.params.OrgID, date)
