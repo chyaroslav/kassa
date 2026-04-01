@@ -393,6 +393,9 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		//clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
 		//k.fptr.SetParam(1256, clientInfo)
 	}
+	k.fptr.UtilFormTlv()
+	clientInfo := k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
+
 	log.Println("sum:", o.OrderSum)
 	ordSum, err = strToFloat(o.OrderSum)
 	if err != nil {
@@ -413,6 +416,7 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
 		log.Println("Печатаем без бумаги..")
 	}
+	k.fptr.SetParam(1256, clientInfo)
 	err = k.fptr.OpenReceipt()
 	if err != nil {
 		log.Println("--ошибка открытия чека: ", err)

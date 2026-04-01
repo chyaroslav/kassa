@@ -2,6 +2,7 @@
 fptr10/
 lib/
 old/
+dll/
 *.dll
 *.exe
 *.zip
