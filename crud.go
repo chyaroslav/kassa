@@ -56,9 +56,15 @@ func (k *K) getOrder(ordId string) (*O, error) {
 		return o, nil
 	}
 	//Получаем данные накладной
-	qSel := `select t2.УИД orderid, t2.СУММА ordersum,
+	qSel := `select 
+	t2.УИД orderid, 
+	t2.КЛ_НАИМЕНОВАНИЕ client, 
+	t2.СУММА ordersum,
 	t2.НОМЕР||' сумма:'||t2.СУММА||' '||substr(t2.ПРИМЕЧАНИЕ,1,50) Description,
-	t2.email Email, t2.АВАНС  Adv, t2.МАРКИРОВКА Mark   
+	t2.email Email, 
+	t2.АВАНС  Adv, 
+	t2.МАРКИРОВКА Mark,
+	t2.ИНН Inn, 
 	from ` + tOrder + ` t2 where t2.УИД=:1`
 	/* type ord struct {
 		OrderId  string  `db:"ORDERID"`
@@ -106,7 +112,7 @@ func (k *K) getOrders(date string) ([]*O, error) {
 	t2.email Email,  
 	t2.АВАНС Adv,
 	t2.МАРКИРОВКА Mark,   
-	t2.ИНН inn
+	t2.ИНН Inn
 	from ` + tOrder + ` t2 where t2.ОРГ_УИД_ЮРЛИЦО=:1 and t2.ДАТА=to_date(:2,'YYYY-MM-DD')`
 	orders := []*O{}
 	err := k.db.Select(&orders, qSel, k.params.OrgID, date)
