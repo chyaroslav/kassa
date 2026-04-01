@@ -64,7 +64,7 @@ func (k *K) getOrder(ordId string) (*O, error) {
 	t2.email Email, 
 	t2.АВАНС  Adv, 
 	t2.МАРКИРОВКА Mark,
-	t2.ИНН Inn, 
+	t2.ИНН Inn 
 	from ` + tOrder + ` t2 where t2.УИД=:1`
 	/* type ord struct {
 		OrderId  string  `db:"ORDERID"`
