@@ -376,6 +376,7 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		k.fptr.UtilFormTlv()
 		clientInfo = k.fptr.GetParamByteArray(fptr10.LIBFPTR_PARAM_TAG_VALUE)
 		k.fptr.ResetParams()
+		k.fptr.SetParam(1256, clientInfo)
 	}
 	//Проверка кода маркировки с заполнением статусов проверки для добавления в чек если позиции с КМ
 	km_checked := false
@@ -417,7 +418,7 @@ func (k *K) printOrderPos(ordId string, pType int, pEl bool) error {
 		k.fptr.SetParam(fptr10.LIBFPTR_PARAM_RECEIPT_ELECTRONICALLY, true)
 		log.Println("Печатаем без бумаги..")
 	}
-	k.fptr.SetParam(1256, clientInfo)
+
 	err = k.fptr.OpenReceipt()
 	if err != nil {
 		log.Println("--ошибка открытия чека: ", err)
