@@ -39,6 +39,7 @@ type P struct {
 	DBHost         string
 	DBPort         string
 	DBName         string
+	URL            string
 	OrgID          int
 	KMPort         string
 	KMIP           string
@@ -753,7 +754,7 @@ func main() {
 		e.GET("/api/v1/kkm/check", k.ApiCheckKKM)
 		e.GET("/api/v1/kkm/cancelReciept", k.ApiCancelReciept)
 		//e.POST("/api/v1/kkm/autoprint", k.ApiChangeAP)
-		e.Logger.Fatal(e.Start(":8080"))
+		e.Logger.Fatal(e.Start(k.params.URL))
 	}
 	//fmt.Println(str)
 
